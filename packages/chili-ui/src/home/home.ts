@@ -24,16 +24,7 @@ interface ApplicationCommand {
     onclick: () => void;
 }
 
-const applicationCommands = new ObservableCollection<ApplicationCommand>(
-    {
-        display: "command.doc.new",
-        onclick: () => PubSub.default.pub("executeCommand", "doc.new"),
-    },
-    {
-        display: "command.doc.open",
-        onclick: () => PubSub.default.pub("executeCommand", "doc.open"),
-    },
-);
+let newDocCount = 1;
 
 export class Home extends HTMLElement {
     constructor(readonly app: IApplication) {
@@ -71,20 +62,50 @@ export class Home extends HTMLElement {
             ),
 
             this.settings(),
-            this.links(),
+            //  this.links(),
         );
     }
 
     private logoSection() {
         return div(
             { className: style.logo },
-            svg({ icon: "icon-chili" }),
-            span({ textContent: "CHILI3D" }),
-            span({ className: style.version, textContent: __APP_VERSION__ }),
+            // svg({ icon: "icon-chili" }),
+            // span({ textContent: "" }),
+            //span({ className: style.version, textContent: __APP_VERSION__ }),
         );
     }
 
     private applicationCommands() {
+        const applicationCommands = new ObservableCollection<ApplicationCommand>(
+            {
+                display: "home.new.3d",
+                onclick: () =>
+                    PubSub.default.pub(
+                        "showPermanent",
+                        async () => {
+                            await this.app.newDocument(`undefined ${newDocCount++}`, "3d");
+                        },
+                        "toast.excuting{0}",
+                        I18n.translate("home.new.3d"),
+                    ),
+            },
+            {
+                display: "home.new.2d",
+                onclick: () =>
+                    PubSub.default.pub(
+                        "showPermanent",
+                        async () => {
+                            await this.app.newDocument(`undefined ${newDocCount++}`, "2d");
+                        },
+                        "toast.excuting{0}",
+                        I18n.translate("home.new.2d"),
+                    ),
+            },
+            {
+                display: "command.doc.open",
+                onclick: () => PubSub.default.pub("executeCommand", "doc.open"),
+            },
+        );
         return collection({
             className: style.buttons,
             sources: applicationCommands,

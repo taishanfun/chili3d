@@ -20,6 +20,7 @@ export const DOCUMENT_FILE_EXTENSION = ".cd";
 
 export interface IDocument extends IPropertyChanged, IDisposable, ISerialize {
     name: string;
+    mode: "2d" | "3d";
     currentNode?: INodeLinkedList;
     rootNode: INodeLinkedList;
     readonly selection: ISelection;

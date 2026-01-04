@@ -8,19 +8,30 @@ export const DefaultRibbon: RibbonTab[] = [
         tabName: "ribbon.tab.startup",
         groups: [
             {
-                groupName: "ribbon.group.draw",
+                groupName: "ribbon.group.2d",
+                modes: ["2d"],
                 items: [
                     "create.line",
-                    "create.extrude",
                     ["create.arc", "create.rect", "create.circle"],
-                    ["create.loft", "create.sweep", "create.revol"],
                     ["create.ellipse", "create.bezier", "create.polygon"],
+                ],
+            },
+            {
+                groupName: "ribbon.group.3d",
+                modes: ["3d"],
+                items: [
+                    "create.line",
+                    ["create.arc", "create.rect", "create.circle"],
+                    ["create.ellipse", "create.bezier", "create.polygon"],
+                    "create.extrude",
+                    ["create.loft", "create.sweep", "create.revol"],
                     ["create.box", "create.pyramid", "create.cylinder"],
                     ["create.cone", "create.sphere", "create.thickSolid"],
                 ],
             },
             {
                 groupName: "ribbon.group.modify",
+                modes: ["2d", "3d"],
                 items: [
                     "modify.move",
                     ["modify.rotate", "modify.mirror", "modify.array"],
@@ -32,14 +43,17 @@ export const DefaultRibbon: RibbonTab[] = [
             },
             {
                 groupName: "ribbon.group.converter",
+                modes: ["3d"],
                 items: ["convert.toWire", ["convert.toFace", "convert.toShell", "convert.toSolid"]],
             },
             {
                 groupName: "ribbon.group.boolean",
+                modes: ["3d"],
                 items: [["boolean.common", "boolean.cut", "boolean.join"]],
             },
             {
                 groupName: "ribbon.group.workingPlane",
+                modes: ["2d", "3d"],
                 items: [
                     "workingPlane.toggleDynamic",
                     ["workingPlane.set", "workingPlane.alignToPlane", "workingPlane.fromSection"],
@@ -47,6 +61,7 @@ export const DefaultRibbon: RibbonTab[] = [
             },
             {
                 groupName: "ribbon.group.tools",
+                modes: ["2d", "3d"],
                 items: [
                     "convert.curveProjection",
                     "create.group",
@@ -54,19 +69,28 @@ export const DefaultRibbon: RibbonTab[] = [
                 ],
             },
             {
+                groupName: "ribbon.group.dimension",
+                modes: ["2d"],
+                items: [["dimension.horizontal"]],
+            },
+            {
                 groupName: "ribbon.group.measure",
+                modes: ["2d", "3d"],
                 items: [["measure.length", "measure.angle", "measure.select"]],
             },
             {
                 groupName: "ribbon.group.act",
+                modes: ["2d", "3d"],
                 items: ["act.alignCamera"],
             },
             {
                 groupName: "ribbon.group.importExport",
+                modes: ["2d", "3d"],
                 items: ["file.import", "file.export"],
             },
             {
                 groupName: "ribbon.group.other",
+                modes: ["2d", "3d"],
                 items: ["wechat.group"],
             },
         ],
@@ -76,6 +100,7 @@ export const DefaultRibbon: RibbonTab[] = [
         groups: [
             {
                 groupName: "ribbon.group.2d",
+                modes: ["2d"],
                 items: [
                     "create.line",
                     "create.rect",
@@ -88,6 +113,7 @@ export const DefaultRibbon: RibbonTab[] = [
             },
             {
                 groupName: "ribbon.group.3d",
+                modes: ["3d"],
                 items: [
                     "create.box",
                     "create.pyramid",
@@ -104,6 +130,7 @@ export const DefaultRibbon: RibbonTab[] = [
         groups: [
             {
                 groupName: "ribbon.group.modify",
+                modes: ["2d", "3d"],
                 items: [
                     "modify.break",
                     "modify.trim",
@@ -114,14 +141,17 @@ export const DefaultRibbon: RibbonTab[] = [
             },
             {
                 groupName: "ribbon.group.tools",
+                modes: ["2d", "3d"],
                 items: ["create.section", "modify.split", "convert.toWire", "convert.toFace"],
             },
             {
                 groupName: "ribbon.group.act",
+                modes: ["2d", "3d"],
                 items: ["act.alignCamera"],
             },
             {
                 groupName: "ribbon.group.other",
+                modes: ["2d", "3d"],
                 items: ["test.performance"],
             },
         ],

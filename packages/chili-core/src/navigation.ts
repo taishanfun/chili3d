@@ -5,8 +5,8 @@ import { Config } from "./config";
 
 export namespace Navigation3D {
     export enum Nav3DType {
-        Chili3d = 0,
-        Revit,
+        Revit = 0,
+        Chili3d,
         Blender,
         Creo,
         Solidworks,

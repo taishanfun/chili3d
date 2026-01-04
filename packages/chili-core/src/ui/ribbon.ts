@@ -7,6 +7,7 @@ import { I18nKeys } from "../i18n";
 export type RibbonGroup = {
     groupName: I18nKeys;
     items: (CommandKeys | CommandKeys[])[];
+    modes?: Array<"2d" | "3d">;
 };
 
 export type RibbonTab = {

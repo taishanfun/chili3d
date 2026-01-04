@@ -1,0 +1,463 @@
+chathistory
+这个项目使用是WebAssembly 技术，也使用了open case cade，这个详细过程是啥，如我我要修改 cpp 中的代码，或者其他c++的代码
+Chat
+Thought process
+Search codebase for ‘High-level overview: How is WebAssembly built and OpenCascade integrated? Look for Emscripten usage, embind bindings, WebAssembly build target, OpenCascade references, OCCT, WASM glue code.’
+Thought
+Search codebase for ‘EMSCRIPTEN|embind|EMSCRIPTEN_BINDINGS|OpenCascade|OCCT|TopoDS|gp_Pnt|WASM|Emscripten’
+cpp\CMakeLists.txt
+cpp\CMakePresets.json
+Thought
+cpp\README.md
+Thought
+Search codebase for ‘package.json’
+package.json
+Thought
+Search codebase for ‘scripts/*’
+scripts\setup_wasm_deps.mjs
+Thought
+cpp\src\opencascade.cpp
+Thought
+cpp\src\shared.hpp
+cpp\src\shared.cpp
+cpp\src\geometry.cpp
+cpp\src\factory.cpp
+cpp\src\factory.cpp
+cpp\src\mesher.cpp
+cpp\src\shape.cpp
+cpp\src\converter.cpp
+cpp\src\transient.cpp
+cpp\src\utils.hpp
+cpp\src\utils.cpp
+cpp\test\index.html
+Thought
+英文问题纠正
+●您的问题是中文，没有英文句子需要语法纠正。若后续使用英文提问，我会先进行语法修改并给出双语回复。
+● 项目流程总览本项目用 C++17 + Emscripten 将 OpenCascade（OCCT）编译为 WebAssembly，并通过 Embind 将 C++ API 暴露给 JS/TS。
+●依赖由脚本自动克隆到 cpp/build 下：emsdk 和 OCCT 源码，随后用 CMake Presets 选择 Ninja 生成器配置 Emscripten 构建。
+●OCCT 被作为静态库在同一编译过程内构建，然后与项目 C++ 源文件链接，生成 chili-wasm.wasm 与 ES6 模块加载器 chili-wasm.js，并自动生成 TypeScript 声明文件。
+●构建产物安装到 packages/chili-wasm/lib 供前端加载与类型引用。
+● 关键文件与职责构建配置
+○CMake 入口与 Emscripten 选项： CMakeLists.txt 构建 occt 静态库并链接 chili-wasm 可执行（Emscripten 将其打包为 wasm）。
+■链接选项包含 --bind（启用 Embind）、–emit-tsd 生成 .d.ts、内存与环境配置（MODULARIZE、EXPORT_ES6、STACK/HEAP、ALLOW_MEMORY_GROWTH、ENVIRONMENT=web）。
+○CMake 预设与工具链： CMakePresets.json 指定 emscripten 工具链 cmake 模块，并提供 Debug/Release 两种 preset。
+●依赖安装脚本
+○自动克隆 emsdk 与 OCCT，安装并激活 Emscripten，且为 TypeScript 生成流程打补丁： setup_wasm_deps.mjs
+●WebAssembly/JS 绑定
+○OCCT 类型与枚举绑定、Handle_* 包装： opencascade.cpp opencascade.cpp:EMSCRIPTEN_BINDINGS
+○共享类型、向量/数组与值对象注册： shared.hpp shared.cpp
+●功能模块（均通过 Embind 暴露到 JS）
+○形状构造与布尔/倒角等操作： factory.cpp …（文件较长，已绑定大量造型 API）
+○几何曲线/曲面分析与投影： geometry.cpp geometry.cpp:EMSCRIPTEN_BINDINGS
+○形状遍历、截交、HLR、偏移等： shape.cpp shape.cpp:EMSCRIPTEN_BINDINGS
+○网格三角化与线/面网格输出： mesher.cpp mesher.cpp:EMSCRIPTEN_BINDINGS
+○STEP/IGES/BREP/STL 转换与 XCAF 颜色/名称解析： converter.cpp converter.cpp:EMSCRIPTEN_BINDINGS
+○基础工具与数组转换： utils.hpp utils.cpp
+● 构建与测试依赖安装
+○运行一次依赖安装（emsdk 与 OCCT 克隆与初始化）
+
+npm run setup:wasm
+
+●Release 构建与安装（产物到 packages/chili-wasm/lib）
+
+npm run build:wasm
+
+●Debug 构建（便于调试）
+
+cd cpp
+cmake --preset debug
+cmake --build --preset debug
+
+●浏览器测试示例（直接加载 ES6 模块并调用 wasm API）： index.html
+○默认从 build/target/release/chili-wasm.js 以 ES6 模块加载
+● 代码修改建议修改入口
+○所有 C++ 暴露到 JS 的新增接口，需要放在 src 下的现有模块或新增 .cpp 文件中，并在该文件内添加一个 EMSCRIPTEN_BINDINGS(…) 区块完成绑定。
+○CMake 使用 GLOB 包含 src/ .cpp 和 src/ .hpp， CMakeLists.txt ，新增文件会自动参与编译，无需改 CMake。
+●选择模块
+○新几何或分析函数 → 放到 geometry.cpp
+○造型构造/布尔/管扫/放样 → 放到 factory.cpp
+○形状遍历/HLR/偏移/截交等 → 放到 shape.cpp
+○网格化输出 → 放到 mesher.cpp
+○数据转换（STEP/IGES/BREP/STL） → 放到 converter.cpp
+●类型与数组
+○若需要在 JS 传递/返回结构体或数组，先在 shared.hpp 定义结构体，再在 shared.cpp 注册 value_object 和 Array 类型，最后在你的绑定代码中使用这些类型。
+●指针与 Handle
+○OCCT 大量使用 Handle_ 与原始指针。绑定时若函数接受/返回原始指针，需配合 allow_raw_pointers；若返回 Handle_ 类型，可使用宏 REGISTER_HANDLE 进行绑定， shared.hpp 。
+●格式与风格
+○项目提供格式化脚本，修改后可统一格式：
+
+npm run format
+
+WASM 输出与类型声明
+●构建生成 ES6 模块与 wasm： CMakeLists.txt
+○-sMODULARIZE=1 与 -sEXPORT_ES6=1 生成默认导出的初始化函数
+○–emit-tsd “${TARGET}.d.ts” 自动生成 TypeScript 声明，便于前端类型安全
+●内存与异常
+○采用 -sALLOW_MEMORY_GROWTH=1、-sINITIAL_HEAP=64MB、-sMAXIMUM_MEMORY=4GB 等配置；Release 下禁用异常捕获以减小体积
+● OCCT 集成细节构建静态库：将 OCCT 源目录下各 Toolkit 的源码加入静态库 CMakeLists.txt 并自动解析其 PACKAGES 依赖 CMakeLists.txt 。
+●禁用插件宏（浏览器环境不支持 dlopen）：-DOCCT_NO_PLUGINS
+●版本：OCCT 使用 V7_9_1；Emscripten 使用 4.0.8，均由脚本固定标签并克隆到 cpp/build/ setup_wasm_deps.mjs
+● 如何进行具体修改如果您告诉我要新增或改动的功能（例如“在 Geometry 添加曲线最小二乘拟合并暴露为 JS API”），我会：
+○选定合适的文件并准备变更预览
+○以“差异预览”的方式精确展示将改动的代码块，您点击“Review and Accept”即可应用
+○更新构建并提供测试用 JS 片段或页面
+● 常见问题与建议绑定命名需稳定，修改类名/函数签名会影响已生成的 .d.ts 与前端引用
+●注意所有返回的 OCCT 对象生命周期，如果需要跨 JS 调用链使用，倾向返回 TopoDS_* 值对象或 Handle_ 包装
+●高复杂模型可能需要调整线性/角度偏差（mesher 的 lineDeflection 与 ANGLE_DEFLECTION）以平衡精度与体积
+●STEP/IGES 解析使用 XCAF 获取名称与颜色，若模型层次复杂，建议从 Converter 的返回树（ShapeNode）中遍历提取
+● 接下来请告知您想改动的具体功能或文件位置与目标，我会准备精准的修改预览并引导您完成构建与验证。
+user73237919449
+绘图中增加文字
+Chat
+Manually stopped
+user73237919449
+绘图中，增加标注菜单，标注中先实现水平标注
+Chat
+Thought process
+chili3d\packages
+Thought
+packages\chili-core\src\visual\textGenerator.ts
+Search codebase for ‘Text|dimension|标注|annotation|label|measure|ITextGenerator|generate(’
+Thought
+packages\chili\src\commands\measure\length.ts
+packages\chili\src\commands\measure\select.ts
+Thought
+Search codebase for ‘htmlText(’
+packages\chili-core\src\visual\view.ts
+packages\chili-three\src\threeView.ts
+packages\chili-builder\src\ribbon.ts
+Thought
+packages\chili-ui\src\ribbon\ribbonButton.ts
+Thought
+Search codebase for ‘class MultistepCommand|meshLine(|meshPoint(|MultistepCommand’
+packages\chili\src\commands\multistepCommand.ts
+Thought
+packages\chili-core\src\math\plane.ts
+Thought
+packages\chili-core\src\visual\index.ts
+packages\chili-core\src\visual\visual.ts
+packages\chili-core\src\visual\visualFactory.ts
+packages\chili-core\src\constants.ts
+packages\chili-core\src\visual\visualContext.ts
+packages\chili-core\src\i18n\keys.ts
+Thought
+packages\chili-core\src\i18n\zh-cn.ts
+packages\chili-core\src\i18n\en.ts
+Thought
+packages\chili\src\commands\index.ts
+chili3d\packages\chili\src\commands
+Thought
+packages\chili-core\src\material.ts
+Thought
+packages\chili-core\src\visual\visual.ts
+Search codebase for ‘VisualConfig’
+packages\chili-core\src\config.ts
+packages\chili\src\snap\index.ts
+packages\chili\src\snap\dimension.ts
+packages\chili\src\step\pointStep.ts
+packages\chili\src\snap\handlers\pointSnapEventHandler.ts
+Thought
+packages\chili\src\commands\measure\angle.ts
+Thought
+packages\chili\src\snap\snap.ts
+Thought
+packages\chili-core\src\command\command.ts
+Compact
+Thought
+Search codebase for ‘Find the ribbon configuration and any references to dimension or measure groups. Identify where to add a new ‘dimension’ group and how items are defined.’
+Model thinking limit reached, please enter ‘Continue’ to get more.
+Abnormally stopped
+Chat
+Thought process
+Inspecting UI implementation
+I’m looking at the line 16 inchili-web/src/index.ts , where the.useUI() function is mentioned. It might be for enabling a 2D UI. I wonder if I should inspect this file closely to understand its context better. It could potentially be part of the app’s bootstrap process, so I’ll read around in that file to gather more insights. Let’s see what I can find!
+packages\chili-web\src\index.ts
+Thought
+Search codebase for ‘Search for existing grid/ortho/polar or 2D drafting aids in UI or config (keywords: grid, ortho, orthogonal, polar, angle, tracking, statusbar).’
+Thought
+Search codebase for ‘Find IDocument.visual API (highlighter, context, update) and how commands show temporary preview meshes (displayMesh/removeMesh) for snapping or tracking.’
+Thought
+packages\chili\src\step\step.ts
+Thought
+packages\chili-vis\src\selectionEventHandler.ts
+Search codebase for ‘displayMesh(’
+packages\chili\src\snap\handlers\snapEventHandler.ts
+Thought
+Search codebase for ‘screenToWorld(’
+packages\chili-three\src\threeView.ts
+Thought
+Search codebase for ‘In math Plane class, find method to intersect Ray / project point / translateTo etc. Need ray-plane intersection for grip dragging on workplane.’
+Search codebase for ‘Find CancelableCommand base implementation and how it manages controller/eventHandler disposal on cancel.’
+Compact
+
+       protected getInitSnaps(pointData: PointSnapData): ISnap[] {
+           const objectSnap = new ObjectSnap(Config.instance.snapType, 
+           pointData.refPoint);
+           const workplaneSnap = pointData.plane
+               ? new PlaneSnap(pointData.plane, pointData.refPoint)
+               : new WorkplaneSnap(pointData.refPoint);
+           const trackingSnap = new TrackingSnap(pointData.refPoint, true);
+           return [objectSnap, trackingSnap, workplaneSnap]
+       }
+   }
+   ```
+ - ShapeNode in `shapeNode.ts`:
+   ```typescript
+   export abstract class ShapeNode extends GeometryNode {
+       protected _shape: Result<IShape> = Result.err(SHAPE_UNDEFINED);
+       get shape(): Result<IShape> {
+           return this._shape;
+       }
+
+       protected setShape(shape: Result<IShape>) {
+           if (this._shape.isOk && this._shape.value.isEqual(shape.value)) {
+               return;
+           }
+
+           if (!shape.isOk) {
+               PubSub.default.pub("displayError", shape.error);
+               return;
+           }
+
+           let oldShape = this._shape;
+           this._shape = shape;
+           this._mesh = undefined;
+
+           this.emitPropertyChanged("shape", oldShape);
+
+           oldShape.unchecked()?.dispose();
+       }
+   }
+   ```
+ - Plane class intersect method in `plane.ts`:
+   ```typescript
+   intersect(ray: Ray, containsExtension: boolean = true): XYZ | undefined {
+       const vec = this.origin.sub(ray.location);
+       if (vec.isEqualTo(XYZ.zero)) return this.origin;
+       const len = vec.dot(this.normal);
+       const dot = ray.direction.dot(this.normal);
+       if (MathUtils.almostEqual(dot, 0)) return MathUtils.almostEqual(len, 
+       0) ? ray.location : undefined;
+       const t = len / dot;
+       if (!containsExtension && t < 0) return undefined;
+       return ray.location.add(ray.direction.multiply(t));
+   }
+   ```
+ - CancelableCommand cancel method in `command.ts`:
+   ```typescript
+   @Property.define("common.cancel")
+   async cancel() {
+       this._isCanceled = true;
+
+       this.controller?.cancel();
+       while (!this._isCompleted) {
+           await new Promise((r) => setTimeout(r, 30));
+       }
+   }
+   ```
+htmlText(text: string, point: XYZLike, options?: HtmlTextOptions): 
+IDisposable {
+    const dispose = () => {
+        options?.onDispose?.();
+        this.content.cssObjects.remove(cssObject);
+        cssObject.element.remove();
+    };
+    let cssObject = new CSS2DObject(this.htmlElement(text, dispose, 
+    options));
+    cssObject.position.set(point.x, point.y, point.z);
+    if (options?.center) cssObject.center.set(options.center.x, options.
+    center.y);
+    this.content.cssObjects.add(cssObject);
+    return { dispose };
+}
+@command({
+    key: "measure.horizontalDimension",
+    icon: "icon-measureHorizontal",
+})
+export class HorizontalDimension extends MultistepCommand {
+    protected override getSteps(): IStep[] {
+        const firstStep = new PointStep("prompt.pickFistPoint");
+        const secondStep = new PointStep("prompt.pickNextPoint", this.
+        getSecondPointData);
+        const thirdStep = new PointStep("prompt.pickDimensionLocation", 
+        this.getThirdPointData);
+        return [firstStep, secondStep, thirdStep];
+    }
+}
+static std::optional<HorizontalDimensionResult> horizontalDimension
+(const Geom_Surface* surface, const Vector3& p1, const Vector3& p2)
+{
+    if (!Surface::isPlanar(surface)) {
+        return std::nullopt;
+    }
+    auto projP1 = Surface::projectPoint(surface, p1).data[0];
+    auto projP2 = Surface::projectPoint(surface, p2).data[0];
+    auto params1 = Surface::parameters(surface, projP1, 1e-3);
+    auto params2 = Surface::parameters(surface, projP2, 1e-3);
+    if (!params1 || !params2) {
+        return std::nullopt;
+    }
+    double length = std::abs(params2->u - params1->u);
+    Vector3 midPoint = projP1.add(projP2).multiply(0.5);
+    return HorizontalDimensionResult {
+        .length = length,
+        .startPoint = projP1,
+        .endPoint = projP2,
+        .midPoint = midPoint
+    };
+}
+intersect(ray: Ray, containsExtension: boolean = true): XYZ | undefined {
+    const vec = this.origin.sub(ray.location);
+    if (vec.isEqualTo(XYZ.zero)) return this.origin;
+    const len = vec.dot(this.normal);
+    const dot = ray.direction.dot(this.normal);
+    if (MathUtils.almostEqual(dot, 0)) return MathUtils.almostEqual(len, 
+    0) ? ray.location : undefined;
+    const t = len / dot;
+    if (!containsExtension && t < 0) return undefined;
+    return ray.location.add(ray.direction.multiply(t));
+}
+@Property.define("common.cancel")
+async cancel() {
+    this._isCanceled = true;
+
+    this.controller?.cancel();
+    while (!this._isCompleted) {
+        await new Promise((r) => setTimeout(r, 30));
+    }
+}
+
+Search codebase for ‘2D workspace mode, grid rendering, ortho/polar toggles, drafting aids, status bar toggles, snap config’
+Thought
+Search codebase for ‘layers implementation (layer, linetype, color), document model support for layers, visibility toggles’
+Thought
+Search codebase for ‘Polyline command or PolylineNode, sketch polyline, line/arc/circle commands, grips or control points editing’
+Thought
+Search codebase for ‘Join command, extend command, wire join, edge join, geometric extend, trimming, intersection-based operations’
+Thought
+Search codebase for ‘drag interaction, gizmo, handle, grip, control point editing, pointermove event handler, mouse drag, transform manipulator’
+Thought
+Search codebase for ‘VisualNode hierarchy, GeometryNode, MeshNode, VisualObject creation pipeline, how nodes become meshes in visual context’
+Corrected English (your question, fixed) “Please continue. I need to modify this project to add 2D features like AutoCAD. List the features that need to be added and provide a detailed technical solution. The MVP should include: (1) 2D workspace mode + grid/ortho/polar toggles, (2) Polyline create/edit + grips, (3) Extend + Join, (4) Persistent single-line Text + persistent Linear Dimensions (horizontal/vertical/aligned), (5) Basic layers (on/off, color, linetype).”
+中文回复（技术方案）
+1) MVP 功能拆解（需要新增/改造的能力清单）
+●2D 工作模式 视图：锁定为正交（Orthographic），相机绕工作平面旋转受限（通常禁用 rotate，仅 pan/zoom）。
+○输入：所有点拾取默认投影到 view.workplane （当前已有 workplane 体系）。
+●Grid / Ortho / Polar 开关 Grid：工作平面上的网格渲染（可见性、间距、主/次网格、颜色、随缩放淡入淡出）。
+○Ortho：相对“上一点”约束到工作平面 x/y 轴方向。
+○Polar：相对“上一点”按角度步进约束（例如 15°），可与 Ortho 互斥或优先级组合。
+●Polyline 创建/编辑 + Grips 新增“折线/多段线”实体（节点）与创建命令。
+○编辑模式显示夹点（grips），支持拖拽顶点、插入点、删除点、闭合/打开。
+●Extend + Join Extend：延伸曲线/边到边界对象（通常是最近交点）。
+○Join：把多段 Edge/Wire 连接成连续 Wire（必要时容差合并、方向排序）。
+●持久化 Text（单行）+ 线性标注（水平/垂直/对齐） 不再是“临时测量显示”，而是 作为 Document 节点保存/序列化 ，并能重绘、可选中、可编辑。
+●基础图层 Layers Layer 表：name、on/off、color、linetype（至少 Solid/Dashed…）、可选 lock/freeze。
+○节点绑定 layerId；图层控制可见性与显示样式（影响渲染与选择）。
+2) 基于现有代码的落地架构（你这套工程里怎么做最顺）
+下面都尽量复用现有模式：Command + Node + VisualContext + Serializer。
+ 2.1 配置与开关（Config 驱动）
+● 你现在已有 Config 和状态栏 Snap/Tracking（参考 config.ts , statusbar.ts , snapConfig.ts ）：在 Config 增加：
+○enableGrid , gridSpacing , gridMajorEvery , gridColor …
+○enableOrtho
+○enablePolar , polarAngleStep
+○draft2DMode （或 workspaceMode: “2d” | “3d” ）
+●UI：像 SnapConfig 一样在 statusbar 右侧扩展 3 个 toggle（Grid/Ortho/Polar），订阅 Config.instance.onPropertyChanged 即时刷新视图。 2.2 2D 工作模式（相机与交互）
+● 已有 Three.js 视图和相机控制器（见 threeView.ts 与 cameraController.ts ），以及鼠标中键导航处理（见 threeViewEventHandler.ts ）：Draft2DMode 开启时：
+○强制使用正交相机（你已有 orthographic 支持，且有 orthographic 更新逻辑）。
+○禁止 rotate，仅允许 pan/zoom（ ThreeViewHandler.canRotate = false 或按 config 动态切换）。
+○视角对齐 workplane（lookAt + up 向量一致），并在 workplane 改变时同步相机。 2.3 Grid 渲染（贴合 workplane）
+● 你已有临时绘制接口： document.visual.context.displayLineSegments(…) （见 visualContext.ts 以及 three 侧实现片段在搜索结果中可见）。实现建议：
+○在 three 视图层维护一个“网格对象 id”（line segments mesh id）。
+○grid 参数变化或 workplane 变化时：重新生成网格线段（EdgeMeshData），调用 displayLineSegments ，旧的 id removeMesh 。
+○网格生成：在 workplane 局部坐标中生成 N 条平行线，再变换到世界坐标（用 plane 的 origin/xvec/yvec）。 2.4 Ortho / Polar 约束（放在 Snap 流程里最省）
+● 你已经有完整 Snap 管线（见 SnapEventHandler , PointSnapEventHandler , trackingSnap.ts ）。最省事的插入点： 在 PointSnapEventHandler 得到候选点后，进行“二次修正” ：
+○refPoint：用 PointSnapData.refPoint （你已经有这个入口）。
+○plane：用 PointSnapData.plane 或 view.workplane。
+○Ortho：把 (p - ref) 投影到 plane x/y 轴，取更大的分量方向。
+○Polar：把 (p - ref) 的角度在 plane x/y 坐标系里 quantize 到步进角，再还原回世界坐标。
+●同时用 tracking 的可视化线来提示约束方向（已有 tracking 可显示辅助线的体系）。
+3) Polyline + Grips（实体模型与交互） 3.1 Polyline 实体（Node）
+你已有 LineNode 、 PolygonNode 这类“参数驱动生成 shape”的模式（见 line.ts , polygon.ts ）：
+●新增 PolylineNode （建议放 packages/chili/src/bodys ）：
+○属性： points: XYZ[] 、 closed: boolean 、可选 bulges （将来支持圆弧段）。
+○generateShape() ：用 shapeFactory 生成 wire；closed=true 则闭合。
+○序列化：用 @Serializer.register + @Serializer.serialze() 。 3.2 创建命令
+● 参考 Polygon 命令的多点拾取 + confirm（见 polygon.ts ）：Polyline 创建同样用多步 PointStep：
+○每次点选更新临时预览（EdgeMeshDataBuilder 已在 polygon 用到）。
+○Enter/confirm 结束；Backspace 撤销最后一点（可用 keyDown 处理）。 3.3 Grips 编辑（关键：新增一个“夹点拖拽事件处理器”）
+● 工程里有统一的 IEventHandler 接口（见 eventHandler.ts ），但目前主要用于 selection/snap/navigation，还没有 grip 编辑。实现路径：
+○新建 PolylineGripEditCommand （CancelableCommand 或 MultistepCommand 均可），流程： 选择一个 PolylineNode
+■显示 grips（用 visual.context.displayMesh 或 lineSegments/points 的临时 mesh）
+■pointerDown 命中某个 grip → 开始拖拽
+■pointerMove：把鼠标射线与 workplane 求交（你已有 Plane.intersect 思路，见 plane.ts ），得到新点，写回 node.points[i]
+■pointerUp：结束，提交 Transaction（支持 undo/redo）
+●grips 的命中检测：
+○简化版：在屏幕空间计算 grip 点到鼠标距离（用 view.worldToScreen ）。
+○或者：给每个 grip 一个小面/小点 mesh，让现有 detect/selection 系统命中。
+4) Extend + Join（复用已有 Trim/GeoUtils 思路）
+你已有 Trim 命令，里面用到了几何相交与裁剪段逻辑（见 trim.ts ）。
+● 4.1 Extend（建议先做 2D：线段/圆弧/样条的“延伸到边界”）输入： 选“要延伸的 Edge”
+○选“边界对象”（1 个或多个 Edge）
+●核心算法（TS 层可先做）： 取要延伸曲线的两个端点，确定“延伸端”（靠近鼠标点击处的端点）。
+○计算曲线的“延长线/延长曲线”与边界的交点集合（用 GeoUtils.intersects 或 curve/edge 的交点能力）。
+○选择距离延伸端最近且在合理方向上的交点，得到 newEnd。
+○生成新 edge：用 curve.trim(newFirst, newLast).makeEdge() （类似 trim 的做法）。
+●后续要增强鲁棒性时，再把相交/延伸计算下沉到 cpp （你之前要求核心逻辑写 cpp，这块很适合）。 4.2 Join
+●输入：多选 Edge/Wire
+●目标：输出一个 Wire（或尽量合并成更少对象）
+●实现： 先在 TS 层做拓扑排序：端点距离在容差内就连接，得到 ordered edges。
+○再调用 OCCT/WASM 的 wire builder（如果现有 API 不够，就在 cpp 暴露 makeWire(edges, tolerance) ）。
+○成功后用 EditableShapeNode 替换原对象（你在 trim 里已经有“删旧加新”的模式）。
+5) 持久化 Text 与 Linear Dimension（标注体系）
+你现在的 view.htmlText(…) 更像临时叠加（见 IView 里 HtmlTextOptions；以及工程里测量命令也在用 htmlText 做临时显示，见 select.ts ）。
+ 要做“持久化”，关键点是： Text/Dimension 必须是 Document 节点，可序列化，并且 visual 层能为它创建/销毁对应的 CSS2DObject + 线段几何。
+● 5.1 TextNode节点字段： text: string
+○position: XYZ
+○plane: Plane （或保存 normal + xDirection）
+○height , color , layerId
+●渲染： 线段：通常无需（除非要文字框）。
+○文本：在 three 侧的“节点可视化对象”里调用 view.htmlText 创建 CSS2DObject，并随节点 transform/position 更新。
+●持久化： Serializer 存 text/position/plane/height/layerId。
+○文档加载后 visual 自动重建。 5.2 LinearDimensionNode（水平/垂直/对齐）
+●节点字段（建议最小集）： p1, p2: XYZ （被标注的两点）
+○location: XYZ （标注线放置位置，决定偏移与文字位置）
+○plane: Plane
+○type: “horizontal” | “vertical” | “aligned”
+○styleId / layerId
+●计算： 你已经有“水平标注”的 wasm/TS 计算雏形；把它扩展为： horizontal：沿 plane x 方向取 Δu
+■vertical：沿 plane y 方向取 Δv
+■aligned：沿 p1→p2 方向取长度，并根据 location 决定偏移法向
+●几何输出（用于渲染）： extension lines（两条引线）
+○dimension line（一条主标注线）
+○arrows（两端箭头，简单三角形或短线）
+○textPosition（文字点）
+●渲染实现建议： 线段部分：让 DimensionNode 作为 MeshNode 或自定义 GeometryNode 输出 linesegments mesh（这样走既有渲染通道）。
+○文字部分：同 TextNode，用 CSS2D。
+6) Layers（最小可用实现）
+当前系统更偏“材质 materialId”（见 GeometryNode.materialId ），还没有传统 CAD layer。
+●MVP 最小层实现（不破坏现有材质体系）： Document 增加 layers: Layer[] （序列化）。
+○Layer： id,name,on,color,linetype
+○Node 增加 layerId （默认 0 层）。
+○渲染： layer.on=false → visual.context.setVisible(node,false)
+■layer.color/linetype → 在 three 渲染时对 edge material 做 override（或生成 edge mesh 时写入 color/lineType）。
+○UI：简单 layer 列表面板（on/off + 颜色），先不做复杂排序/过滤。
+English Reply (Technical Solution)
+1) MVP feature breakdown (what to add)
+●2D workspace mode (orthographic, constrained navigation, workplane-first picking)
+●Grid + Ortho + Polar toggles (config-driven + UI toggles)
+●Polyline create/edit with grips (vertex drag/edit)
+●Extend + Join editing commands
+●Persistent single-line Text + persistent Linear Dimensions (H/V/Aligned)
+●Basic Layers (on/off, color, linetype)
+2) Implementation approach aligned with this codebase
+●Use Config + Statusbar toggles like the existing Snap/Tracking UI: See config.ts , statusbar.ts , snapConfig.ts .
+●Implement 2D mode by switching to orthographic camera and disabling rotation in the existing navigation handler: See threeViewEventHandler.ts , cameraController.ts .
+●Render Grid as a dedicated line-segments object aligned to view.workplane , using the existing visual context temporary draw APIs: See visualContext.ts .
+●Apply Ortho/Polar constraints inside the snap pipeline (post-process snapped point relative to refPoint on the workplane), reusing the existing Snap architecture: See SnapEventHandler , PointSnapEventHandler , trackingSnap.ts .
+●Add PolylineNode following existing parametric node patterns (LineNode/PolygonNode): See LineNode , PolygonNode .
+●Add Grip editing as a dedicated IEventHandler that draws temporary grips and updates node points during drag: Interface is at eventHandler.ts , and ray→plane intersection logic is consistent with plane.ts .
+●Build Extend/Join by reusing the existing “replace geometry node” transaction pattern demonstrated in Trim: See trim.ts .
+●Make Text/Dimension persistent by introducing new serializable nodes and adding a Three-side visual implementation that creates: line geometry via normal node mesh pipeline (MeshNode/GeometryNode), and
+○text labels via CSS2D (your view already supports HtmlText in the view interface: view.ts ). Also note how measurement currently uses htmlText temporarily in select.ts .
+●Add Layers as a document-level table + per-node layerId , mapping layer on/off to visual.context.setVisible , and mapping color/linetype to edge styling.
+ If you want, I can next turn this solution into an ordered implementation plan (PR-sized steps) that matches your repo structure (which packages/files get touched first, and what to implement per step).

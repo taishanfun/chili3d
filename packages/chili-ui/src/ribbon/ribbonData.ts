@@ -23,19 +23,25 @@ export class RibbonGroupData extends Observable {
         this.setProperty("groupName", value);
     }
 
-    constructor(groupName: I18nKeys, ...items: RibbonCommandData[]) {
+    get modes(): Array<"2d" | "3d"> | undefined {
+        return this.getPrivateValue("modes");
+    }
+    set modes(value: Array<"2d" | "3d"> | undefined) {
+        this.setProperty("modes", value);
+    }
+
+    constructor(groupName: I18nKeys, items: RibbonCommandData[], modes?: Array<"2d" | "3d">) {
         super();
         this.setPrivateValue("groupName", groupName);
+        this.setPrivateValue("modes", modes);
         this.items = new ObservableCollection<RibbonCommandData>(...items);
     }
 
     static fromProfile(profile: RibbonGroup) {
-        return new RibbonGroupData(
-            profile.groupName,
-            ...profile.items.map((item) => {
-                return Array.isArray(item) ? new ObservableCollection(...item) : item;
-            }),
-        );
+        const items = profile.items.map((item) => {
+            return Array.isArray(item) ? new ObservableCollection(...item) : item;
+        });
+        return new RibbonGroupData(profile.groupName, items, profile.modes);
     }
 }
 

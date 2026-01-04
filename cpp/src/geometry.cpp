@@ -14,6 +14,7 @@
 #include <Geom_Surface.hxx>
 #include <Geom_TrimmedCurve.hxx>
 #include <Standard_Handle.hxx>
+#include <cmath>
 #include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
 #include <optional>
@@ -114,6 +115,68 @@ public:
     }
 };
 
+struct HorizontalDimensionResult {
+    double value;
+    Vector3 p1;
+    Vector3 p2;
+    Vector3 dimStart;
+    Vector3 dimEnd;
+    Vector3 text;
+};
+
+class Dimension {
+private:
+    static void projectToPlaneXY(const gp_Ax3& ax3, const Vector3& p, double& x, double& y)
+    {
+        const gp_Pnt origin = ax3.Location();
+        const gp_Pnt point = Vector3::toPnt(p);
+        const gp_Vec vec(origin, point);
+        const gp_Vec xVec(ax3.XDirection());
+        const gp_Vec yVec(ax3.YDirection());
+        x = vec.Dot(xVec);
+        y = vec.Dot(yVec);
+    }
+
+    static Vector3 fromPlaneXY(const gp_Ax3& ax3, double x, double y)
+    {
+        const gp_Pnt origin = ax3.Location();
+        const gp_Vec xVec(ax3.XDirection());
+        const gp_Vec yVec(ax3.YDirection());
+        const gp_Pnt p = origin.Translated(xVec.Multiplied(x) + yVec.Multiplied(y));
+        return Vector3::fromPnt(p);
+    }
+
+public:
+    static HorizontalDimensionResult horizontal(const Pln& plane, const Vector3& p1, const Vector3& p2, const Vector3& p3)
+    {
+        const gp_Ax3 ax3 = Pln::toAx3(plane);
+
+        double x1(0), y1(0);
+        double x2(0), y2(0);
+        double x3(0), y3(0);
+        projectToPlaneXY(ax3, p1, x1, y1);
+        projectToPlaneXY(ax3, p2, x2, y2);
+        projectToPlaneXY(ax3, p3, x3, y3);
+
+        const double dimY = y3;
+        const double dimX1 = x1;
+        const double dimX2 = x2;
+
+        const Vector3 wp1 = fromPlaneXY(ax3, x1, y1);
+        const Vector3 wp2 = fromPlaneXY(ax3, x2, y2);
+        const Vector3 wDimStart = fromPlaneXY(ax3, dimX1, dimY);
+        const Vector3 wDimEnd = fromPlaneXY(ax3, dimX2, dimY);
+        const Vector3 wText = fromPlaneXY(ax3, (dimX1 + dimX2) * 0.5, dimY);
+
+        return HorizontalDimensionResult { .value = std::abs(dimX2 - dimX1),
+            .p1 = wp1,
+            .p2 = wp2,
+            .dimStart = wDimStart,
+            .dimEnd = wDimEnd,
+            .text = wText };
+    }
+};
+
 struct SurfaceBounds {
     double u1;
     double u2;
@@ -177,6 +240,14 @@ public:
 
 EMSCRIPTEN_BINDINGS(Geometry)
 {
+    value_object<HorizontalDimensionResult>("HorizontalDimensionResult")
+        .field("value", &HorizontalDimensionResult::value)
+        .field("p1", &HorizontalDimensionResult::p1)
+        .field("p2", &HorizontalDimensionResult::p2)
+        .field("dimStart", &HorizontalDimensionResult::dimStart)
+        .field("dimEnd", &HorizontalDimensionResult::dimEnd)
+        .field("text", &HorizontalDimensionResult::text);
+
     class_<Curve>("Curve")
         .class_function("makeLine", &Curve::makeLine)
         .class_function("trim", &Curve::trim, allow_raw_pointers())
@@ -187,6 +258,8 @@ EMSCRIPTEN_BINDINGS(Geometry)
         .class_function("parameter", &Curve::parameter, allow_raw_pointers())
         .class_function("curveLength", &Curve::curveLength, allow_raw_pointers())
         .class_function("projects", &Curve::projects, allow_raw_pointers());
+
+    class_<Dimension>("Dimension").class_function("horizontal", &Dimension::horizontal);
 
     value_object<SurfaceBounds>("SurfaceBounds")
         .field("u1", &SurfaceBounds::u1)

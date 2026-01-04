@@ -30,6 +30,7 @@ export class RibbonDataContent extends Observable {
     readonly ribbonTabs = new ObservableCollection<RibbonTabData>();
     private _activeTab: RibbonTabData;
     private _activeView: IView | undefined;
+    private _activeMode: "2d" | "3d" | undefined;
 
     constructor(
         readonly app: IApplication,
@@ -55,6 +56,14 @@ export class RibbonDataContent extends Observable {
     }
     set activeView(value: IView | undefined) {
         this.setProperty("activeView", value);
+        this.activeMode = value?.document.mode;
+    }
+
+    get activeMode(): "2d" | "3d" | undefined {
+        return this._activeMode;
+    }
+    set activeMode(value: "2d" | "3d" | undefined) {
+        this.setProperty("activeMode", value);
     }
 }
 
@@ -104,6 +113,15 @@ class DisplayConverter implements IConverter<RibbonTabData> {
     }
 }
 
+class RibbonGroupDisplayConverter implements IConverter<"2d" | "3d" | undefined> {
+    constructor(readonly group: RibbonGroupData) {}
+
+    convert(mode: "2d" | "3d" | undefined): Result<string> {
+        if (!this.group.modes || !mode) return Result.ok("");
+        return Result.ok(this.group.modes.includes(mode) ? "" : "none");
+    }
+}
+
 export class Ribbon extends HTMLElement {
     private readonly _commandContext = div({ className: style.commandContextPanel });
     private commandContext?: CommandContext;
@@ -123,8 +141,8 @@ export class Ribbon extends HTMLElement {
             { className: style.left },
             div(
                 { className: style.appIcon, onclick: () => PubSub.default.pub("displayHome", true) },
-                svg({ className: style.icon, icon: "icon-chili" }),
-                span({ id: "appName", textContent: `Chili3D - v${__APP_VERSION__}` }),
+                //  svg({ className: style.icon, icon: "icon-chili" }),
+                //yangfan span({ id: "appName", textContent: `Chili3D - v${__APP_VERSION__}` }),
             ),
             div(
                 { className: style.ribbonTitlePanel },
@@ -230,7 +248,16 @@ export class Ribbon extends HTMLElement {
 
     private ribbonGroup(group: RibbonGroupData) {
         return div(
-            { className: style.ribbonGroup },
+            {
+                className: style.ribbonGroup,
+                style: {
+                    display: new Binding(
+                        this.dataContent,
+                        "activeMode",
+                        new RibbonGroupDisplayConverter(group),
+                    ),
+                },
+            },
             collection({
                 sources: group.items,
                 className: style.content,

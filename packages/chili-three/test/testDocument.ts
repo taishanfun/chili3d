@@ -25,6 +25,7 @@ export class TestDocument implements IDocument, ISerialize {
     application: IApplication;
     components: Component[] = [];
     name: string;
+    mode: "2d" | "3d" = "3d";
     currentNode: INodeLinkedList | undefined;
     id: string;
     history: History;

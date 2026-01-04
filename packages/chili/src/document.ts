@@ -44,6 +44,13 @@ export class Document extends Observable implements IDocument {
 
     static readonly version = __DOCUMENT_VERSION__;
 
+    get mode(): "2d" | "3d" {
+        return this.getPrivateValue("mode", "3d");
+    }
+    set mode(value: "2d" | "3d") {
+        this.setProperty("mode", value);
+    }
+
     get name(): string {
         return this.getPrivateValue("name");
     }
@@ -84,9 +91,11 @@ export class Document extends Observable implements IDocument {
         readonly application: IApplication,
         name: string,
         readonly id: string = Id.generate(),
+        mode: "2d" | "3d" = "3d",
     ) {
         super();
         this.setPrivateValue("name", name);
+        this.setPrivateValue("mode", mode);
         this.history = new History();
         this.visual = application.visualFactory.create(this);
         this.selection = new Selection(this);
@@ -113,6 +122,7 @@ export class Document extends Observable implements IDocument {
             properties: {
                 id: this.id,
                 name: this.name,
+                mode: this.mode,
                 components: this.components.map((x) => Serializer.serializeObject(x)),
                 nodes: NodeSerializer.serialize(this.rootNode),
                 materials: this.materials.map((x) => Serializer.serializeObject(x)),
@@ -191,7 +201,12 @@ export class Document extends Observable implements IDocument {
             );
             return undefined;
         }
-        let document = new Document(app, data.properties["name"], data.properties["id"]);
+        let document = new Document(
+            app,
+            data.properties["name"],
+            data.properties["id"],
+            (data.properties as any)["mode"] ?? "3d",
+        );
         document.history.disabled = true;
         document.materials.push(
             ...data.properties["materials"].map((x: Serialized) =>

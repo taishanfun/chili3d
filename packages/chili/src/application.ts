@@ -7,6 +7,7 @@ import {
     I18n,
     IApplication,
     ICommand,
+    Id,
     IDataExchange,
     IDocument,
     IService,
@@ -156,8 +157,8 @@ export class Application implements IApplication {
         return document;
     }
 
-    async newDocument(name: string): Promise<IDocument> {
-        const document = new Document(this, name);
+    async newDocument(name: string, mode: IDocument["mode"] = "3d"): Promise<IDocument> {
+        const document = new Document(this, name, Id.generate(), mode);
         const lightGray = new Material(document, "LightGray", 0xdedede);
         const deepGray = new Material(document, "DeepGray", 0x898989);
         document.materials.push(lightGray, deepGray);
@@ -173,7 +174,8 @@ export class Application implements IApplication {
 
     protected async createActiveView(document: IDocument | undefined) {
         if (document === undefined) return undefined;
-        const view = document.visual.createView("3d", Plane.XY);
+        const viewName = document.mode === "2d" ? "2d" : "3d";
+        const view = document.visual.createView(viewName, Plane.XY);
         this.activeView = view;
     }
 }

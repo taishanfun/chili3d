@@ -22,7 +22,7 @@ export interface IApplication {
     readonly documents: Set<IDocument>;
     executingCommand: ICommand | undefined;
     activeView: IView | undefined;
-    newDocument(name: string): Promise<IDocument>;
+    newDocument(name: string, mode?: IDocument["mode"]): Promise<IDocument>;
     openDocument(id: string): Promise<IDocument | undefined>;
     loadDocument(data: Serialized): Promise<IDocument | undefined>;
 }
