@@ -159,7 +159,11 @@ export class ViewGizmo extends HTMLElement implements IViewGizmo {
 
     private readonly _onPointerMove = (e: PointerEvent) => {
         e.stopPropagation();
-        if (e.buttons === MOUSE_LEFT && !(e.movementX === 0 && e.movementY === 0)) {
+        if (
+            this.view.document.mode !== "2d" &&
+            e.buttons === MOUSE_LEFT &&
+            !(e.movementX === 0 && e.movementY === 0)
+        ) {
             this.cameraController.rotate(e.movementX * 4, e.movementY * 4);
             this._canClick = false;
         }
@@ -191,6 +195,9 @@ export class ViewGizmo extends HTMLElement implements IViewGizmo {
 
     private readonly _onClick = (e: MouseEvent) => {
         e.stopPropagation();
+        if (this.view.document.mode === "2d") {
+            return;
+        }
         if (!this._canClick) {
             this._canClick = true;
             return;

@@ -70,6 +70,12 @@ export class Viewport extends HTMLElement {
     }
 
     private createCameraControls() {
+        if (this.view.document.mode === "2d") {
+            return div(
+                { className: style.border },
+                this.createCameraControl("orthographic", "icon-orthographic"),
+            );
+        }
         return div(
             { className: style.border },
             this.createCameraControl("orthographic", "icon-orthographic"),

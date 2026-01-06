@@ -83,7 +83,7 @@ export class ThreeViewHandler implements IEventHandler {
 
         if (this.currentPointerEventMap.size === 3 && this.lastPointerEventMap.size === 3) {
             const offset = this.getPrimaryTouchOffset();
-            if (offset) view.cameraController.rotate(offset.dx, offset.dy);
+            if (offset && this.canRotate) view.cameraController.rotate(offset.dx, offset.dy);
         } else if (this.currentPointerEventMap.size === 2 && this.lastPointerEventMap.size === 2) {
             const last = this.getCenterAndDistance(this.lastPointerEventMap);
             const current = this.getCenterAndDistance(this.currentPointerEventMap);
@@ -158,7 +158,9 @@ export class ThreeViewHandler implements IEventHandler {
             view.cameraController.fitContent();
             view.update();
         } else if (event.buttons === MOUSE_MIDDLE) {
-            view.cameraController.startRotate(event.offsetX, event.offsetY);
+            if (this.canRotate) {
+                view.cameraController.startRotate(event.offsetX, event.offsetY);
+            }
             this._lastDown = {
                 time: Date.now(),
                 key: event.buttons,

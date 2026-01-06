@@ -50,6 +50,9 @@ export class CameraController extends Observable implements ICameraController {
         return this.getPrivateValue("cameraType", "perspective");
     }
     set cameraType(value: CameraType) {
+        if (this.view.document.mode === "2d" && value === "perspective") {
+            return;
+        }
         if (this.setProperty("cameraType", value)) {
             this._camera = this.createCamera(this._camera.near, this._camera.far);
             if (this.camera instanceof OrthographicCamera) {
@@ -323,6 +326,9 @@ export class CameraController extends Observable implements ICameraController {
         this._position.set(eye.x, eye.y, eye.z);
         this._target.set(target.x, target.y, target.z);
         this.camera.up.set(up.x, up.y, up.z);
+        if (this._camera instanceof OrthographicCamera) {
+            this.updateOrthographicCamera(this._camera);
+        }
         this.updateCameraPosionTarget();
     }
 

@@ -35,6 +35,7 @@ export class ThreeVisual implements IVisual {
         this.scene = this.initScene();
         this.defaultEventHandler = this.createDefaultSelectionHandler(document);
         this.viewHandler = new ThreeViewHandler();
+        (this.viewHandler as ThreeViewHandler).canRotate = document.mode !== "2d";
         this.context = new ThreeVisualContext(this, this.scene);
         this.highlighter = new ThreeHighlighter(this.context);
         this.meshExporter = new ThreeMeshExporter(this.context);

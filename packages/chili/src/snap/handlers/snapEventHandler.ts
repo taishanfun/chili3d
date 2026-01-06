@@ -109,6 +109,9 @@ export abstract class SnapEventHandler<D extends SnapData = SnapData> implements
 
     protected setSnaped(view: IView, event: PointerEvent) {
         this.findSnapPoint(ShapeType.Edge, view, event);
+        if (view.document.mode === "2d" && this._snaped?.point) {
+            this._snaped.point = view.workplane.project(this._snaped.point);
+        }
 
         this.snaps.forEach((snap) => snap.handleSnaped?.(view.document.visual.document, this._snaped));
     }

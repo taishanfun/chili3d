@@ -113,6 +113,10 @@ export class ThreeView extends Observable implements IView {
         let resizerObserverCallback = debounce(this._resizerObserverCallback, 100);
         this._resizeObserver = new ResizeObserver(resizerObserverCallback);
         this.cameraController = new CameraController(this);
+        if (this.document.mode === "2d") {
+            this.cameraController.cameraType = "orthographic";
+            this.alignCameraToWorkplane(workplane);
+        }
         this._renderer = this.initRenderer();
         this._cssRenderer = this.initCssRenderer();
         this._scene.add(this.dynamicLight);
@@ -242,7 +246,13 @@ export class ThreeView extends Observable implements IView {
     }
 
     set workplane(value: Plane) {
-        this.setProperty("workplane", value);
+        this.setProperty("workplane", value, () => {
+            if (this.document.mode === "2d") {
+                this.cameraController.cameraType = "orthographic";
+                this.alignCameraToWorkplane(value);
+                this.update();
+            }
+        });
     }
 
     update() {
@@ -315,8 +325,12 @@ export class ThreeView extends Observable implements IView {
     }
 
     screenToWorld(mx: number, my: number): XYZ {
-        let vec = this.mouseToWorld(mx, my);
-        return ThreeHelper.toXYZ(vec);
+        if (this.document.mode === "2d") {
+            const ray = this.rayAt(mx, my);
+            const point = this.workplane.intersect(ray);
+            if (point) return point;
+        }
+        return ThreeHelper.toXYZ(this.mouseToWorld(mx, my));
     }
 
     worldToScreen(point: XYZ): XY {
@@ -339,6 +353,15 @@ export class ThreeView extends Observable implements IView {
     private mouseToWorld(mx: number, my: number, z: number = 0.5) {
         let { x, y } = this.screenToCameraRect(mx, my);
         return new Vector3(x, y, z).unproject(this.camera);
+    }
+
+    private alignCameraToWorkplane(plane: Plane) {
+        const distance = 1500;
+        this.cameraController.lookAt(
+            plane.origin.add(plane.normal.multiply(distance)),
+            plane.origin,
+            plane.yvec,
+        );
     }
 
     detectVisual(x: number, y: number, nodeFilter?: INodeFilter): IVisualObject[] {
