@@ -107,6 +107,11 @@ export class Selection implements ISelection, IDisposable {
     }
 
     private readonly shapeNodeFilter = (x: INode) => {
+        if (x instanceof VisualNode) {
+            const layerId = x.layerId;
+            const layer = this.document.layers.find((l) => l.id === layerId);
+            if (layer?.locked) return false;
+        }
         if (x instanceof ShapeNode) {
             let shape = x.shape.value;
             if (!shape || !this.shapeFilter) return true;

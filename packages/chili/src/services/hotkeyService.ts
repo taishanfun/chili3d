@@ -49,6 +49,11 @@ export class HotkeyService implements IService {
     }
 
     protected canHandleKey(e: KeyboardEvent): boolean {
+        const target = e.target as HTMLElement | null;
+        if (!target) return true;
+        const tag = target.tagName;
+        if (target.isContentEditable) return false;
+        if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return false;
         return true;
     }
 

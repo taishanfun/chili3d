@@ -15,7 +15,7 @@ import {
     ShapeType,
 } from "chili-core";
 import { MeshUtils } from "chili-geo";
-import { Material, Mesh, MeshLambertMaterial } from "three";
+import { Color, Material, Mesh, MeshLambertMaterial } from "three";
 import { LineMaterial } from "three/examples/jsm/lines/LineMaterial";
 import { LineSegments2 } from "three/examples/jsm/lines/LineSegments2";
 import { LineSegmentsGeometry } from "three/examples/jsm/lines/LineSegmentsGeometry";
@@ -28,6 +28,7 @@ import { ThreeVisualObject } from "./threeVisualObject";
 
 export class ThreeGeometry extends ThreeVisualObject implements IVisualGeometry {
     private _faceMaterial: Material | Material[];
+    private _edgeMaterial?: LineMaterial;
     private _edges?: LineSegments2;
     private _faces?: Mesh;
 
@@ -86,8 +87,10 @@ export class ThreeGeometry extends ThreeVisualObject implements IVisualGeometry 
     private removeMeshes() {
         if (this._edges) {
             this.remove(this._edges);
+            this._edgeMaterial?.dispose();
             this._edges.geometry.dispose();
             this._edges = null as any;
+            this._edgeMaterial = undefined;
         }
         if (this._faces) {
             this.remove(this._faces);
@@ -96,9 +99,30 @@ export class ThreeGeometry extends ThreeVisualObject implements IVisualGeometry 
         }
     }
 
+    private toHexColor(value: number | string | undefined): number | undefined {
+        if (value === undefined) return undefined;
+        if (typeof value === "number") return value;
+        if (!value) return undefined;
+        try {
+            return new Color(value).getHex();
+        } catch {
+            return undefined;
+        }
+    }
+
     private initEdges(data: EdgeMeshData) {
-        const buff = ThreeGeometryFactory.createEdgeBufferGeometry(data);
-        this._edges = new LineSegments2(buff, defaultEdgeMaterial);
+        const layer = this.geometryNode.document.layers.find((l) => l.id === this.geometryNode.layerId);
+        const layerColor = this.toHexColor(layer?.color);
+        const layerEdgeData: EdgeMeshData = {
+            ...data,
+            color: layerColor ?? data.color,
+            lineType: layer?.lineType ?? data.lineType,
+        };
+        const buff = ThreeGeometryFactory.createEdgeBufferGeometry(layerEdgeData);
+        const material = ThreeGeometryFactory.createEdgeMaterial(layerEdgeData);
+        this._edgeMaterial = material;
+        ThreeGeometryFactory.setColor(buff, layerEdgeData, material);
+        this._edges = new LineSegments2(buff, material).computeLineDistances();
         this._edges.layers.set(Constants.Layers.Wireframe);
         this.add(this._edges);
     }
@@ -120,7 +144,7 @@ export class ThreeGeometry extends ThreeVisualObject implements IVisualGeometry 
     }
 
     removeTemperaryMaterial(): void {
-        if (this._edges) this._edges.material = defaultEdgeMaterial;
+        if (this._edges) this._edges.material = this._edgeMaterial ?? defaultEdgeMaterial;
         if (this._faces) this._faces.material = this._faceMaterial;
     }
 

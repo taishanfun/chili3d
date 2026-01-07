@@ -10,6 +10,7 @@ import {
     NodeRecord,
     ObservableCollection,
 } from "./foundation";
+import { Layer } from "./layer";
 import { Material } from "./material";
 import { Component, INode, INodeLinkedList } from "./model";
 import { ISelection } from "./selection";
@@ -22,6 +23,7 @@ export interface IDocument extends IPropertyChanged, IDisposable, ISerialize {
     name: string;
     mode: "2d" | "3d";
     currentNode?: INodeLinkedList;
+    currentLayerId?: string;
     rootNode: INodeLinkedList;
     readonly selection: ISelection;
     readonly id: string;
@@ -29,6 +31,7 @@ export interface IDocument extends IPropertyChanged, IDisposable, ISerialize {
     readonly visual: IVisual;
     readonly application: IApplication;
     readonly components: Array<Component>;
+    layers: ObservableCollection<Layer>;
     materials: ObservableCollection<Material>;
     acts: ObservableCollection<Act>;
     addNode(...nodes: INode[]): void;
@@ -38,4 +41,7 @@ export interface IDocument extends IPropertyChanged, IDisposable, ISerialize {
     save(): Promise<void>;
     close(): Promise<void>;
     serialize(): Serialized;
+    isolateLayer?(layerId: string): void;
+    unisolateLayer?(): void;
+    isLayerIsolated?(): boolean;
 }

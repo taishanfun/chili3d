@@ -18,6 +18,7 @@ import {
     ISelection,
     IVisual,
     Id,
+    Layer,
     Logger,
     Material,
     NodeLinkedListHistoryRecord,
@@ -39,6 +40,7 @@ export class Document extends Observable implements IDocument {
     readonly selection: ISelection;
     readonly acts = new ObservableCollection<Act>();
     readonly materials: ObservableCollection<Material> = new ObservableCollection();
+    readonly layers: ObservableCollection<Layer> = new ObservableCollection();
 
     private readonly _nodeChangedObservers = new Set<INodeChangedObserver>();
 
@@ -87,6 +89,54 @@ export class Document extends Observable implements IDocument {
         this.setProperty("currentNode", value);
     }
 
+    get currentLayerId(): string | undefined {
+        return this.getPrivateValue("currentLayerId", this.layers.at(0)?.id);
+    }
+    set currentLayerId(value: string | undefined) {
+        this.setProperty("currentLayerId", value);
+    }
+
+    private _layerVisibilitySnapshot?: Map<string, boolean>;
+
+    isLayerIsolated(): boolean {
+        return this._layerVisibilitySnapshot !== undefined;
+    }
+
+    isolateLayer(layerId: string): void {
+        if (!this._layerVisibilitySnapshot) {
+            const snapshot = new Map<string, boolean>();
+            this.layers.forEach((layer) => snapshot.set(layer.id, layer.visible));
+            this._layerVisibilitySnapshot = snapshot;
+        }
+        const oldDisabled = this.history.disabled;
+        this.history.disabled = true;
+        try {
+            this.layers.forEach((layer) => {
+                layer.visible = layer.id === layerId;
+            });
+        } finally {
+            this.history.disabled = oldDisabled;
+        }
+    }
+
+    unisolateLayer(): void {
+        if (!this._layerVisibilitySnapshot) return;
+        const snapshot = this._layerVisibilitySnapshot;
+        const oldDisabled = this.history.disabled;
+        this.history.disabled = true;
+        try {
+            this.layers.forEach((layer) => {
+                const v = snapshot.get(layer.id);
+                if (v !== undefined) {
+                    layer.visible = v;
+                }
+            });
+        } finally {
+            this.history.disabled = oldDisabled;
+            this._layerVisibilitySnapshot = undefined;
+        }
+    }
+
     constructor(
         readonly application: IApplication,
         name: string,
@@ -100,7 +150,12 @@ export class Document extends Observable implements IDocument {
         this.visual = application.visualFactory.create(this);
         this.selection = new Selection(this);
         this.materials.onCollectionChanged(this.handleMaterialChanged);
+        this.layers.onCollectionChanged(this.handleLayerChanged);
         application.documents.add(this);
+
+        const defaultLayer = new Layer(this, "Layer 1", "#333333");
+        this.layers.push(defaultLayer);
+        this.setPrivateValue("currentLayerId", defaultLayer.id);
 
         Logger.info(`new document: ${name}`);
     }
@@ -123,8 +178,10 @@ export class Document extends Observable implements IDocument {
                 id: this.id,
                 name: this.name,
                 mode: this.mode,
+                currentLayerId: this.currentLayerId,
                 components: this.components.map((x) => Serializer.serializeObject(x)),
                 nodes: NodeSerializer.serialize(this.rootNode),
+                layers: this.layers.map((x) => Serializer.serializeObject(x)),
                 materials: this.materials.map((x) => Serializer.serializeObject(x)),
                 acts: this.acts.map((x) => Serializer.serializeObject(x)),
             },
@@ -171,6 +228,7 @@ export class Document extends Observable implements IDocument {
         this.application.activeView = this.application.views.at(0);
         this.application.documents.delete(this);
         this.materials.removeCollectionChanged(this.handleMaterialChanged);
+        this.layers.removeCollectionChanged(this.handleLayerChanged);
         PubSub.default.pub("documentClosed", this);
 
         Logger.info(`document: ${this.name} closed`);
@@ -208,6 +266,15 @@ export class Document extends Observable implements IDocument {
             (data.properties as any)["mode"] ?? "3d",
         );
         document.history.disabled = true;
+        document.layers.clear();
+        document.layers.push(
+            ...((data.properties as any)["layers"] ?? []).map((x: Serialized) =>
+                Serializer.deserializeObject(document, x),
+            ),
+        );
+        if (document.layers.length === 0) {
+            document.layers.push(new Layer(document, "Layer 1", "#333333"));
+        }
         document.materials.push(
             ...data.properties["materials"].map((x: Serialized) =>
                 Serializer.deserializeObject(document, x),
@@ -221,6 +288,13 @@ export class Document extends Observable implements IDocument {
                 Serializer.deserializeObject(document, x),
             ),
         );
+
+        const loadedCurrentLayerId = (data.properties as any)["currentLayerId"] as string | undefined;
+        if (loadedCurrentLayerId && document.layers.find((l) => l.id === loadedCurrentLayerId)) {
+            document.currentLayerId = loadedCurrentLayerId;
+        } else {
+            document.currentLayerId = document.layers.at(0)?.id;
+        }
 
         const rootNode = await NodeSerializer.deserialize(document, data.properties["nodes"]);
         document.setRootNode(rootNode);
@@ -243,6 +317,30 @@ export class Document extends Observable implements IDocument {
                 undo: () => this.materials.push(...args.items),
                 redo: () => this.materials.remove(...args.items),
             });
+        }
+    };
+
+    private readonly handleLayerChanged = (args: CollectionChangedArgs) => {
+        if (args.action === CollectionAction.add) {
+            Transaction.add(this, {
+                name: "LayerChanged",
+                dispose() {},
+                undo: () => this.layers.remove(...args.items),
+                redo: () => this.layers.push(...args.items),
+            });
+            if (!this.currentLayerId) {
+                this.currentLayerId = this.layers.at(0)?.id;
+            }
+        } else if (args.action === CollectionAction.remove) {
+            Transaction.add(this, {
+                name: "LayerChanged",
+                dispose() {},
+                undo: () => this.layers.push(...args.items),
+                redo: () => this.layers.remove(...args.items),
+            });
+            if (this.currentLayerId && !this.layers.find((l) => l.id === this.currentLayerId)) {
+                this.currentLayerId = this.layers.at(0)?.id;
+            }
         }
     };
 
