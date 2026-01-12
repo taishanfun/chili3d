@@ -1,10 +1,10 @@
 // Part of the Chili3d Project, under the AGPL-3.0 License.
 // See LICENSE file in the project root for full license information.
 
-import { IConverter, IDocument, Logger, Property, Texture } from "chili-core";
+import { IConverter, IDocument, Logger, MTextNode, Property, Texture } from "chili-core";
 import { CheckProperty } from "./check";
 import { ColorProperty } from "./colorProperty";
-import { InputProperty } from "./input";
+import { InputProperty, MTextLinesProperty } from "./input";
 import { TextureProperty } from "./material/textureEditor";
 import { MaterialProperty } from "./materialProperty";
 
@@ -22,6 +22,14 @@ export function findPropertyControl(
 
     if (prop.type === "materialId" && canShowMaterialProperty(objs, prop)) {
         return new MaterialProperty(document, objs, prop);
+    }
+
+    if (objs[0] instanceof MTextNode && prop.name === "text") {
+        return new MTextLinesProperty(document, objs, prop);
+    }
+
+    if (objs[0] instanceof MTextNode && prop.name === "lineColors") {
+        return "";
     }
 
     const value = objs[0][prop.name];

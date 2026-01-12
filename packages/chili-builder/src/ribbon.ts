@@ -14,6 +14,7 @@ export const DefaultRibbon: RibbonTab[] = [
                     "create.line",
                     ["create.arc", "create.rect", "create.circle"],
                     ["create.ellipse", "create.bezier", "create.polygon"],
+                    ["create.text", "create.mtext", "create.leader"],
                 ],
             },
             {
@@ -64,14 +65,14 @@ export const DefaultRibbon: RibbonTab[] = [
                 modes: ["2d", "3d"],
                 items: [
                     "convert.curveProjection",
-                    "create.group",
+                    ["create.group", "create.insert"],
                     ["create.section", "create.offset", "create.copyShape"],
                 ],
             },
             {
                 groupName: "ribbon.group.dimension",
                 modes: ["2d"],
-                items: [["dimension.horizontal"]],
+                items: [["dimension.horizontal", "dimension.vertical", "dimension.aligned"]],
             },
             {
                 groupName: "ribbon.group.measure",
@@ -109,6 +110,9 @@ export const DefaultRibbon: RibbonTab[] = [
                     "create.ellipse",
                     "create.polygon",
                     "create.bezier",
+                    "create.text",
+                    "create.mtext",
+                    "create.leader",
                 ],
             },
             {

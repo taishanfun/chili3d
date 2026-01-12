@@ -6,6 +6,7 @@ import {
     Act,
     Binding,
     CameraType,
+    CursorType,
     DialogResult,
     IConverter,
     IView,
@@ -31,6 +32,12 @@ export class Viewport extends HTMLElement {
     private readonly _flyout: Flyout;
     private readonly _eventCaches: [keyof HTMLElementEventMap, (e: any) => void][] = [];
     private readonly _acts: HTMLElement;
+    private readonly _crosshair: HTMLElement;
+    private readonly _crosshairH: HTMLElement;
+    private readonly _crosshairV: HTMLElement;
+    private readonly _crosshairCenter: HTMLElement;
+    private _cursorType: CursorType = "default";
+    private _isPanning: boolean = false;
 
     constructor(
         readonly view: IView,
@@ -39,9 +46,25 @@ export class Viewport extends HTMLElement {
         super();
         this.className = style.root;
         this._flyout = new Flyout();
+        this._crosshairH = div({ className: style.crosshairH });
+        this._crosshairV = div({ className: style.crosshairV });
+        this._crosshairCenter = div({ className: style.crosshairCenter });
+        this._crosshair = div(
+            {
+                className: style.crosshair,
+            },
+            this._crosshairH,
+            this._crosshairV,
+            this._crosshairCenter,
+        );
         this._acts = this.createActs();
         this.render();
         view.setDom(this);
+    }
+
+    setCursorType(type: CursorType) {
+        this._cursorType = type;
+        this.syncCursor();
     }
 
     private readonly onActCollectionChanged = () => {
@@ -54,6 +77,7 @@ export class Viewport extends HTMLElement {
 
     private render() {
         this.append(
+            this._crosshair,
             this._acts,
             this.showViewControls
                 ? div(
@@ -259,6 +283,7 @@ export class Viewport extends HTMLElement {
             this._flyout.style.top = event.offsetY + "px";
             this._flyout.style.left = event.offsetX + "px";
         }
+        this.updateCrosshairPosition(event.offsetX, event.offsetY);
         if (view.document.visual.eventHandler.isEnabled)
             view.document.visual.eventHandler.pointerMove(view, event);
         if (view.document.visual.viewHandler.isEnabled)
@@ -271,6 +296,8 @@ export class Viewport extends HTMLElement {
         }
 
         view.document.application.activeView = view;
+        this._isPanning = event.button === 1 || (event.buttons & 4) === 4;
+        this.syncCursor();
         if (view.document.visual.eventHandler.isEnabled)
             view.document.visual.eventHandler.pointerDown(view, event);
         if (view.document.visual.viewHandler.isEnabled)
@@ -278,6 +305,8 @@ export class Viewport extends HTMLElement {
     };
 
     private readonly pointerUp = (view: IView, event: PointerEvent) => {
+        this._isPanning = (event.buttons & 4) === 4;
+        this.syncCursor();
         if (view.document.visual.eventHandler.isEnabled)
             view.document.visual.eventHandler.pointerUp(view, event);
         if (view.document.visual.viewHandler.isEnabled)
@@ -285,6 +314,7 @@ export class Viewport extends HTMLElement {
     };
 
     private readonly pointerOut = (view: IView, event: PointerEvent) => {
+        this.hideCrosshair();
         if (view.document.visual.eventHandler.isEnabled)
             view.document.visual.eventHandler.pointerOut?.(view, event);
         if (view.document.visual.viewHandler.isEnabled)
@@ -297,6 +327,37 @@ export class Viewport extends HTMLElement {
         if (view.document.visual.viewHandler.isEnabled)
             view.document.visual.viewHandler.mouseWheel?.(view, event);
     };
+
+    private syncCursor() {
+        const shouldShowCrosshair = this._cursorType === "draw" || this._cursorType === "select.default";
+        if (shouldShowCrosshair && !this._isPanning) {
+            this._crosshair.classList.add(style.crosshairVisible);
+            this.classList.remove(style.panCursor);
+        } else {
+            this._crosshair.classList.remove(style.crosshairVisible);
+            if (this._isPanning) {
+                this.classList.add(style.panCursor);
+            } else {
+                this.classList.remove(style.panCursor);
+            }
+        }
+    }
+
+    private updateCrosshairPosition(x: number, y: number) {
+        if (!this._crosshair.classList.contains(style.crosshairVisible)) {
+            return;
+        }
+        this._crosshairH.style.top = `${y}px`;
+        this._crosshairV.style.left = `${x}px`;
+        this._crosshairCenter.style.left = `${x}px`;
+        this._crosshairCenter.style.top = `${y}px`;
+    }
+
+    private hideCrosshair() {
+        this._crosshair.classList.remove(style.crosshairVisible);
+        this.classList.remove(style.panCursor);
+        this._isPanning = false;
+    }
 }
 
 customElements.define("chili-uiview", Viewport);

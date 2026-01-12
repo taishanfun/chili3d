@@ -7,6 +7,7 @@ import {
     CollectionChangedArgs,
     ComponentNode,
     DeepObserver,
+    DimensionNode,
     EdgeMeshData,
     GeometryNode,
     GroupNode,
@@ -16,15 +17,18 @@ import {
     IVisual,
     IVisualContext,
     IVisualObject,
+    LeaderNode,
     Material,
     Matrix4,
     MeshLike,
     MeshNode,
+    MTextNode,
     NodeAction,
     NodeRecord,
     ShapeMeshData,
     ShapeNode,
     ShapeType,
+    TextNode,
     Texture,
     XY,
     XYZ,
@@ -47,7 +51,15 @@ import {
 import { ThreeGeometry } from "./threeGeometry";
 import { ThreeGeometryFactory } from "./threeGeometryFactory";
 import { ThreeHelper } from "./threeHelper";
-import { GroupVisualObject, ThreeComponentObject, ThreeMeshObject } from "./threeVisualObject";
+import {
+    GroupVisualObject,
+    ThreeComponentObject,
+    ThreeDimensionObject,
+    ThreeLeaderObject,
+    ThreeMeshObject,
+    ThreeTextObject,
+    ThreeVisualObject,
+} from "./threeVisualObject";
 
 export class ThreeVisualContext implements IVisualContext {
     private readonly _visualNodeMap = new Map<IVisualObject, INode>();
@@ -213,13 +225,23 @@ export class ThreeVisualContext implements IVisualContext {
             ThreeHelper.fromXYZ(boundingBox.max),
         ]);
         return this.visuals().filter((x) => {
-            const node = (x as ThreeGeometry)?.geometryNode;
-            const shape = (node as ShapeNode)?.shape?.unchecked();
+            const geometryNode = (x as ThreeGeometry)?.geometryNode;
+            const shape = (geometryNode as ShapeNode)?.shape?.unchecked();
             if (filter && shape && !filter.allow(shape)) {
                 return false;
             }
 
-            let boundingBox = BoundingBox.transformed(x.boundingBox()!, node.worldTransform());
+            const worldTransform =
+                x instanceof ThreeVisualObject
+                    ? x.worldTransform()
+                    : geometryNode
+                      ? geometryNode.worldTransform()
+                      : undefined;
+            if (!worldTransform) {
+                return false;
+            }
+
+            let boundingBox = BoundingBox.transformed(x.boundingBox()!, worldTransform);
             if (boundingBox === undefined) {
                 return false;
             }
@@ -236,11 +258,7 @@ export class ThreeVisualContext implements IVisualContext {
         let group = obj as Group;
         if (group.type === "Group") {
             group.children.forEach((x) => this._getVisualObject(visuals, x));
-        } else if (
-            obj instanceof ThreeGeometry ||
-            obj instanceof ThreeMeshObject ||
-            obj instanceof ThreeComponentObject
-        ) {
+        } else if (obj instanceof ThreeGeometry || obj instanceof ThreeVisualObject) {
             visuals.push(obj);
         }
     }
@@ -362,6 +380,12 @@ export class ThreeVisualContext implements IVisualContext {
             visualObject = new GroupVisualObject(node);
         } else if (node instanceof ComponentNode) {
             visualObject = new ThreeComponentObject(node, this);
+        } else if (node instanceof TextNode || node instanceof MTextNode) {
+            visualObject = new ThreeTextObject(this, node);
+        } else if (node instanceof DimensionNode) {
+            visualObject = new ThreeDimensionObject(this, node);
+        } else if (node instanceof LeaderNode) {
+            visualObject = new ThreeLeaderObject(this, node);
         }
 
         if (visualObject) {

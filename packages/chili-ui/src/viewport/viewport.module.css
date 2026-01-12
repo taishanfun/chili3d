@@ -1,5 +1,61 @@
 .root {
     position: relative;
+    background-color: var(--viewport-background-color);
+    background-image:
+        radial-gradient(
+            ellipse at center,
+            rgba(255, 255, 255, 0.06) 0%,
+            rgba(255, 255, 255, 0.02) 45%,
+            rgba(0, 0, 0, 0.28) 100%
+        ),
+        radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+    background-size:
+        100% 100%,
+        24px 24px;
+    background-position:
+        0 0,
+        0 0;
+}
+
+.crosshair {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    display: none;
+    z-index: 10;
+    opacity: 0.85;
+}
+
+.crosshairVisible {
+    display: block;
+}
+
+.crosshairH {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(220, 220, 220, 0.65);
+}
+
+.crosshairV {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: rgba(220, 220, 220, 0.65);
+}
+
+.crosshairCenter {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border: 1px solid rgba(220, 220, 220, 0.75);
+    transform: translate(-50%, -50%);
+}
+
+.panCursor {
+    cursor: grabbing !important;
 }
 
 .actsContainer {

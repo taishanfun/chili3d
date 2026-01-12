@@ -41,7 +41,10 @@ export function createComponentMesh(size: ComponentSize): ComponentMesh {
         },
         linesegments: Mesh.createLineSegments(size.lineSegment),
         surfaceMaterials: [],
-        surface: Mesh.createSurface(size.meshPosition, size.meshIndex > 0 ? size.meshIndex : size.meshPosition * 3),
+        surface: Mesh.createSurface(
+            size.meshPosition,
+            size.meshIndex > 0 ? size.meshIndex : size.meshPosition * 3,
+        ),
     };
 }
 
@@ -110,10 +113,30 @@ export class Component {
         this._nodes = nodes;
         this.id = id;
         this._origin = origin ?? BoundingBox.center(this.boundingBox);
+        this._nodes.forEach((node) => node.onPropertyChanged(this.handleDefinitionNodeChanged));
     }
 
     toString(): string {
         return this.name;
+    }
+
+    private readonly handleDefinitionNodeChanged = () => {
+        this.invalidate();
+    };
+
+    invalidate() {
+        this._mesh = undefined;
+        this._boundingBox = undefined;
+        const instances = [...this.instances];
+        const documentRedrawMap = new Map<IDocument, ComponentNode[]>();
+        for (const instance of instances) {
+            const list = documentRedrawMap.get(instance.document) ?? [];
+            list.push(instance);
+            documentRedrawMap.set(instance.document, list);
+        }
+        documentRedrawMap.forEach((nodes, document) => {
+            document.visual.context.redrawNode(nodes);
+        });
     }
 
     private mergeMesh() {
@@ -209,12 +232,7 @@ export class Component {
         });
     }
 
-    private mergeMeshNode(
-        visual: ComponentMesh,
-        node: MeshNode,
-        transform: Matrix4,
-        offset: ComponentSize
-    ) {
+    private mergeMeshNode(visual: ComponentMesh, node: MeshNode, transform: Matrix4, offset: ComponentSize) {
         if (node.mesh.meshType === "surface") {
             const materialONMap = this.mapOldNewMaterialIndex(node.materialId, visual.surfaceMaterials);
             MeshUtils.setSurfaceMeshData(visual.surface, node.mesh, transform, offset, materialONMap);
@@ -223,7 +241,10 @@ export class Component {
                 offset.meshIndex += node.mesh.index.length;
             }
         } else if (node.mesh.meshType === "linesegments") {
-            visual.linesegments.position?.set(transform.ofPoints(node.mesh.position!), offset.lineSegment * 3);
+            visual.linesegments.position?.set(
+                transform.ofPoints(node.mesh.position!),
+                offset.lineSegment * 3,
+            );
             offset.lineSegment += node.mesh.position!.length / 3;
         }
     }

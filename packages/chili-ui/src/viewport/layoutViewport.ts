@@ -7,7 +7,7 @@ import {
     CursorType,
     IApplication,
     IView,
-    PubSub
+    PubSub,
 } from "chili-core";
 import { Cursor } from "../cursor";
 import style from "./layoutViewport.module.css";
@@ -15,8 +15,12 @@ import { Viewport } from "./viewport";
 
 export class LayoutViewport extends HTMLElement {
     private readonly _viewports: Map<IView, Viewport> = new Map();
+    private _activeView?: IView;
 
-    constructor(readonly app: IApplication, readonly showViewControls: boolean = true) {
+    constructor(
+        readonly app: IApplication,
+        readonly showViewControls: boolean = true,
+    ) {
         super();
         this.className = style.root;
         app.views.onCollectionChanged(this._handleViewCollectionChanged);
@@ -48,6 +52,12 @@ export class LayoutViewport extends HTMLElement {
     }
 
     private readonly _handleCursor = (type: CursorType) => {
+        const viewport = this._activeView ? this._viewports.get(this._activeView) : undefined;
+        if (viewport) {
+            viewport.style.cursor = Cursor.get(type);
+            viewport.setCursorType(type);
+            return;
+        }
         this.style.cursor = Cursor.get(type);
     };
 
@@ -60,6 +70,7 @@ export class LayoutViewport extends HTMLElement {
     }
 
     private readonly _handleActiveViewChanged = (view: IView | undefined) => {
+        this._activeView = view;
         this._viewports.forEach((v) => {
             if (v.view === view) {
                 v.classList.remove(style.hidden);

@@ -4,10 +4,10 @@ import { IStep, PointStep } from "../../step";
 import { MultistepCommand } from "../multistepCommand";
 
 @command({
-    key: "dimension.horizontal",
+    key: "dimension.vertical",
     icon: "icon-measureLength",
 })
-export class HorizontalDimension extends MultistepCommand {
+export class VerticalDimension extends MultistepCommand {
     protected override getSteps(): IStep[] {
         return [
             new PointStep("prompt.pickFistPoint"),
@@ -49,7 +49,7 @@ export class HorizontalDimension extends MultistepCommand {
         const m2 = this.meshPoint(p2);
         if (!point) return [m1, m2, this.meshLine(p1, p2)];
 
-        const result = this.horizontalResult(point);
+        const result = this.verticalResult(point);
         return [
             m1,
             m2,
@@ -59,7 +59,7 @@ export class HorizontalDimension extends MultistepCommand {
         ];
     };
 
-    private horizontalResult(location: XYZ): {
+    private verticalResult(location: XYZ): {
         value: number;
         p1: XYZ;
         p2: XYZ;
@@ -72,8 +72,8 @@ export class HorizontalDimension extends MultistepCommand {
 
         try {
             const wasmDimension = (globalThis as any).wasm?.Dimension;
-            if (wasmDimension?.horizontal) {
-                return wasmDimension.horizontal(
+            if (wasmDimension?.vertical) {
+                return wasmDimension.vertical(
                     {
                         location: plane.origin,
                         direction: plane.normal,
@@ -86,7 +86,7 @@ export class HorizontalDimension extends MultistepCommand {
             }
         } catch {}
 
-        return this.horizontalResultFallback(
+        return this.verticalResultFallback(
             plane,
             this.stepDatas[0].point!,
             this.stepDatas[1].point!,
@@ -94,7 +94,7 @@ export class HorizontalDimension extends MultistepCommand {
         );
     }
 
-    private horizontalResultFallback(
+    private verticalResultFallback(
         plane: { origin: XYZ; xvec: XYZ; yvec: XYZ },
         p1: XYZ,
         p2: XYZ,
@@ -120,17 +120,17 @@ export class HorizontalDimension extends MultistepCommand {
         const b = toXY(p2);
         const c = toXY(p3);
 
-        const dimY = c.y;
-        const dimX1 = a.x;
-        const dimX2 = b.x;
+        const dimX = c.x;
+        const dimY1 = a.y;
+        const dimY2 = b.y;
 
         return {
-            value: Math.abs(dimX2 - dimX1),
+            value: Math.abs(dimY2 - dimY1),
             p1: fromXY(a.x, a.y),
             p2: fromXY(b.x, b.y),
-            dimStart: fromXY(dimX1, dimY),
-            dimEnd: fromXY(dimX2, dimY),
-            text: fromXY((dimX1 + dimX2) * 0.5, dimY),
+            dimStart: fromXY(dimX, dimY1),
+            dimEnd: fromXY(dimX, dimY2),
+            text: fromXY(dimX, (dimY1 + dimY2) * 0.5),
         };
     }
 
@@ -141,7 +141,7 @@ export class HorizontalDimension extends MultistepCommand {
         const plane = this.stepDatas[0].view.workplane;
         const node = DimensionNode.fromWorld(
             this.document,
-            "horizontal",
+            "vertical",
             p1,
             p2,
             location,
@@ -151,7 +151,7 @@ export class HorizontalDimension extends MultistepCommand {
                 xvec: plane.xvec,
                 yvec: plane.yvec,
             },
-            I18n.translate("command.dimension.horizontal"),
+            I18n.translate("command.dimension.vertical"),
         );
         this.document.rootNode.add(node);
         this.document.visual.update();

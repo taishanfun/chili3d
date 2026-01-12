@@ -53,12 +53,20 @@ import { ThreeHelper } from "./threeHelper";
 import { ThreeHighlighter } from "./threeHighlighter";
 import style from "./threeView.module.css";
 import { ThreeVisualContext } from "./threeVisualContext";
-import { ThreeComponentObject, ThreeMeshObject, ThreeVisualObject } from "./threeVisualObject";
+import {
+    ThreeComponentObject,
+    ThreeDimensionObject,
+    ThreeLeaderObject,
+    ThreeMeshObject,
+    ThreeTextObject,
+    ThreeVisualObject,
+} from "./threeVisualObject";
 import { ViewGizmo } from "./viewGizmo";
 
 export class ThreeView extends Observable implements IView {
     private _dom?: HTMLElement;
     private _needsUpdate: boolean = false;
+    private _cssPixelsPerWorldUnit: number = 1;
 
     private readonly _scene: Scene;
     private readonly _renderer: WebGLRenderer;
@@ -268,6 +276,7 @@ export class ThreeView extends Observable implements IView {
         });
         if (!this._needsUpdate) return;
 
+        this.updateCssPixelsPerWorldUnit();
         let dir = this.camera.position.clone().sub(this.cameraController.target);
         this.dynamicLight.position.copy(dir);
         this._renderer.render(this._scene, this.camera);
@@ -275,6 +284,24 @@ export class ThreeView extends Observable implements IView {
         this._gizmo?.update();
 
         this._needsUpdate = false;
+    }
+
+    private updateCssPixelsPerWorldUnit() {
+        const heightPx = Math.max(1, this.height);
+        let pxPerWorldUnit = 1;
+        if (this.camera instanceof PerspectiveCamera) {
+            const distance = Math.max(1e-6, this.camera.position.distanceTo(this.cameraController.target));
+            const fovRad = (this.camera.fov * Math.PI) / 180;
+            const viewHeightWorldAtTarget = 2 * Math.tan(fovRad / 2) * distance;
+            pxPerWorldUnit = heightPx / Math.max(1e-6, viewHeightWorldAtTarget);
+        } else if (this.camera instanceof OrthographicCamera) {
+            const frustumHeightWorld = this.camera.top - this.camera.bottom;
+            pxPerWorldUnit = heightPx / Math.max(1e-6, frustumHeightWorld);
+        }
+        pxPerWorldUnit = Math.max(1e-4, Math.min(1e4, pxPerWorldUnit));
+        if (Math.abs(pxPerWorldUnit - this._cssPixelsPerWorldUnit) < 1e-9) return;
+        this._cssPixelsPerWorldUnit = pxPerWorldUnit;
+        this._cssRenderer.domElement.style.setProperty("--c3d-px-per-world-unit", String(pxPerWorldUnit));
     }
 
     resize(width: number, height: number) {
@@ -290,6 +317,7 @@ export class ThreeView extends Observable implements IView {
         this._renderer.setSize(width, height);
         this._cssRenderer.setSize(width, height);
         this.cameraController.setSize(width, height);
+        this.updateCssPixelsPerWorldUnit();
         this.update();
     }
 
@@ -412,6 +440,12 @@ export class ThreeView extends Observable implements IView {
             node = threeObject.geometryNode;
         } else if (threeObject instanceof ThreeComponentObject) {
             node = threeObject.componentNode;
+        } else if (threeObject instanceof ThreeTextObject) {
+            node = threeObject.textNode;
+        } else if (threeObject instanceof ThreeLeaderObject) {
+            node = threeObject.leaderNode;
+        } else if (threeObject instanceof ThreeDimensionObject) {
+            node = threeObject.dimensionNode;
         }
 
         return node;

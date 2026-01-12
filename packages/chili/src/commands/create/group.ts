@@ -13,6 +13,7 @@ import {
     ICommand,
     IDocument,
     Localize,
+    Matrix4,
     Observable,
     PubSub,
     Transaction,
@@ -76,7 +77,16 @@ export class GroupCommand extends MultistepCommand {
                 node.transform = worldTransform;
             }
 
-            const component = new Component(definition.name, this.stepDatas[0].nodes!, definition.insert);
+            const toLocal = Matrix4.fromTranslation(
+                -definition.insert.x,
+                -definition.insert.y,
+                -definition.insert.z,
+            );
+            for (const node of nodes) {
+                node.transform = node.transform.multiply(toLocal);
+            }
+
+            const component = new Component(definition.name, nodes, XYZ.zero);
             this.document.components.push(component);
 
             if (definition.convertInstance) {
@@ -84,7 +94,12 @@ export class GroupCommand extends MultistepCommand {
                     this.document,
                     definition.name,
                     component.id,
-                    component.origin,
+                    definition.insert,
+                );
+                group.transform = Matrix4.fromTranslation(
+                    definition.insert.x,
+                    definition.insert.y,
+                    definition.insert.z,
                 );
                 this.document.rootNode.add(group);
             }

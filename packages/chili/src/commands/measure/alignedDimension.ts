@@ -4,10 +4,10 @@ import { IStep, PointStep } from "../../step";
 import { MultistepCommand } from "../multistepCommand";
 
 @command({
-    key: "dimension.horizontal",
+    key: "dimension.aligned",
     icon: "icon-measureLength",
 })
-export class HorizontalDimension extends MultistepCommand {
+export class AlignedDimension extends MultistepCommand {
     protected override getSteps(): IStep[] {
         return [
             new PointStep("prompt.pickFistPoint"),
@@ -49,7 +49,7 @@ export class HorizontalDimension extends MultistepCommand {
         const m2 = this.meshPoint(p2);
         if (!point) return [m1, m2, this.meshLine(p1, p2)];
 
-        const result = this.horizontalResult(point);
+        const result = this.alignedResult(point);
         return [
             m1,
             m2,
@@ -59,7 +59,7 @@ export class HorizontalDimension extends MultistepCommand {
         ];
     };
 
-    private horizontalResult(location: XYZ): {
+    private alignedResult(location: XYZ): {
         value: number;
         p1: XYZ;
         p2: XYZ;
@@ -72,8 +72,8 @@ export class HorizontalDimension extends MultistepCommand {
 
         try {
             const wasmDimension = (globalThis as any).wasm?.Dimension;
-            if (wasmDimension?.horizontal) {
-                return wasmDimension.horizontal(
+            if (wasmDimension?.aligned) {
+                return wasmDimension.aligned(
                     {
                         location: plane.origin,
                         direction: plane.normal,
@@ -86,7 +86,7 @@ export class HorizontalDimension extends MultistepCommand {
             }
         } catch {}
 
-        return this.horizontalResultFallback(
+        return this.alignedResultFallback(
             plane,
             this.stepDatas[0].point!,
             this.stepDatas[1].point!,
@@ -94,7 +94,7 @@ export class HorizontalDimension extends MultistepCommand {
         );
     }
 
-    private horizontalResultFallback(
+    private alignedResultFallback(
         plane: { origin: XYZ; xvec: XYZ; yvec: XYZ },
         p1: XYZ,
         p2: XYZ,
@@ -120,17 +120,38 @@ export class HorizontalDimension extends MultistepCommand {
         const b = toXY(p2);
         const c = toXY(p3);
 
-        const dimY = c.y;
-        const dimX1 = a.x;
-        const dimX2 = b.x;
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const len = Math.sqrt(dx * dx + dy * dy);
+        if (len <= 1e-9) {
+            const w = fromXY(a.x, a.y);
+            return {
+                value: 0,
+                p1: w,
+                p2: w,
+                dimStart: w,
+                dimEnd: w,
+                text: w,
+            };
+        }
+
+        const ux = dx / len;
+        const uy = dy / len;
+        const vx = -uy;
+        const vy = ux;
+        const offset = (c.x - a.x) * vx + (c.y - a.y) * vy;
+
+        const dimStart = { x: a.x + vx * offset, y: a.y + vy * offset };
+        const dimEnd = { x: b.x + vx * offset, y: b.y + vy * offset };
+        const text = { x: (dimStart.x + dimEnd.x) * 0.5, y: (dimStart.y + dimEnd.y) * 0.5 };
 
         return {
-            value: Math.abs(dimX2 - dimX1),
+            value: len,
             p1: fromXY(a.x, a.y),
             p2: fromXY(b.x, b.y),
-            dimStart: fromXY(dimX1, dimY),
-            dimEnd: fromXY(dimX2, dimY),
-            text: fromXY((dimX1 + dimX2) * 0.5, dimY),
+            dimStart: fromXY(dimStart.x, dimStart.y),
+            dimEnd: fromXY(dimEnd.x, dimEnd.y),
+            text: fromXY(text.x, text.y),
         };
     }
 
@@ -141,7 +162,7 @@ export class HorizontalDimension extends MultistepCommand {
         const plane = this.stepDatas[0].view.workplane;
         const node = DimensionNode.fromWorld(
             this.document,
-            "horizontal",
+            "aligned",
             p1,
             p2,
             location,
@@ -151,7 +172,7 @@ export class HorizontalDimension extends MultistepCommand {
                 xvec: plane.xvec,
                 yvec: plane.yvec,
             },
-            I18n.translate("command.dimension.horizontal"),
+            I18n.translate("command.dimension.aligned"),
         );
         this.document.rootNode.add(node);
         this.document.visual.update();

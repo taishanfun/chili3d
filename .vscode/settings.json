@@ -5,5 +5,35 @@
     },
     "editor.inlineSuggest.showToolbar": "onHover",
     "cmake.sourceDirectory": "${workspaceFolder}/cpp",
-    "C_Cpp.default.configurationProvider": "ms-vscode.cpptools"
+    "C_Cpp.default.configurationProvider": "ms-vscode.cpptools",
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/.git": true,
+        "**/.cache": true,
+        "**/coverage": true,
+        "**/packages/chili-occ/occ-wasm": true,
+        "**/packages/chili-wasm/lib": true
+    },
+    "search.exclude": {
+        "**/node_modules": true,
+        "**/dist": true,
+        "**/build": true,
+        "**/.git": true,
+        "**/.cache": true,
+        "**/coverage": true,
+        "**/packages/chili-occ/occ-wasm": true,
+        "**/packages/chili-wasm/lib": true
+    },
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/dist/**": true,
+        "**/build/**": true,
+        "**/.git/**": true,
+        "**/.cache/**": true,
+        "**/coverage/**": true,
+        "**/packages/chili-occ/occ-wasm/**": true,
+        "**/packages/chili-wasm/lib/**": true
+    }
 }

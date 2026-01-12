@@ -2,12 +2,11 @@
 // See LICENSE file in the project root for full license information.
 
 import { CursorType } from "chili-core";
-import draw from "./draw.cur";
 
 const cursors: Map<CursorType, string> = new Map([
     ["default", "default"],
-    ["draw", `url(${draw}), default`],
-    ["select.default", "crosshair"],
+    ["draw", "none"],
+    ["select.default", "none"],
 ]);
 
 export namespace Cursor {
