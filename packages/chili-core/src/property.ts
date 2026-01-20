@@ -12,6 +12,7 @@ export interface Property {
     converter?: IConverter;
     group?: I18nKeys;
     icon?: string;
+    readOnly?: boolean;
     type?: PropertyType;
     dependencies?: {
         property: string | number | symbol;

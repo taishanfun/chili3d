@@ -13,6 +13,7 @@ export class CheckProperty extends PropertyBase {
         readonly property: Property,
     ) {
         super(objects);
+        const readOnly = !!property.readOnly;
         this.appendChild(
             div(
                 { className: commonStyle.panel },
@@ -20,7 +21,9 @@ export class CheckProperty extends PropertyBase {
                 input({
                     type: "checkbox",
                     checked: new Binding(objects[0], property.name),
+                    disabled: readOnly,
                     onclick: () => {
+                        if (readOnly) return;
                         const value = !objects[0][property.name];
 
                         Transaction.execute(document, "modify property", () => {

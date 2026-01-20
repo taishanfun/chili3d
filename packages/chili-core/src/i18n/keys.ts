@@ -148,6 +148,7 @@ const I18N_KEYS = [
     "common.thickness",
     "common.type",
     "common.volume",
+    "common.customProperties",
     "dialog.title.selectWorkingPlane",
     "entity.editable",
     "entity.parameter",
@@ -291,6 +292,13 @@ const I18N_KEYS = [
     "mtext.lineSpacing",
     "mtext.lineColors",
     "leader.associative",
+    "leader.startNodeId",
+    "leader.startShapeType",
+    "leader.startLocalPoint",
+    "leader.startMode",
+    "leader.endNodeId",
+    "leader.endLocalPoint",
+    "leader.endMode",
 ] as const;
 
 export type I18nKeys = (typeof I18N_KEYS)[number];

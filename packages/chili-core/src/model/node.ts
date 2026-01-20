@@ -66,6 +66,68 @@ export abstract class Node extends HistoryObservable implements INode {
         this.setProperty("visible", value, () => this.onVisibleChanged());
     }
 
+    @Serializer.serialze()
+    get customProperties(): string {
+        return this.getPrivateValue("customProperties", "");
+    }
+    set customProperties(value: string) {
+        this.setProperty("customProperties", value ?? "");
+    }
+
+    @Serializer.serialze()
+    get customPropertyTypes(): string {
+        return this.getPrivateValue("customPropertyTypes", "");
+    }
+    set customPropertyTypes(value: string) {
+        this.setProperty("customPropertyTypes", value ?? "");
+    }
+
+    getCustomProperty(key: string): unknown {
+        const data = this.getCustomPropertiesObject();
+        return data?.[key];
+    }
+
+    setCustomProperty(key: string, value: unknown) {
+        const data = this.getCustomPropertiesObject();
+        data[key] = value;
+        this.customProperties = JSON.stringify(data, null, 2);
+
+        const types = this.getCustomPropertyTypesObject();
+        if (!types[key]) {
+            types[key] = this.inferCustomPropertyType(value);
+            this.customPropertyTypes = JSON.stringify(types, null, 2);
+        }
+    }
+
+    removeCustomProperty(key: string) {
+        const data = this.getCustomPropertiesObject();
+        delete data[key];
+        this.customProperties = Object.keys(data).length ? JSON.stringify(data, null, 2) : "";
+
+        const types = this.getCustomPropertyTypesObject();
+        if (types[key]) {
+            delete types[key];
+            this.customPropertyTypes = Object.keys(types).length ? JSON.stringify(types, null, 2) : "";
+        }
+    }
+
+    getCustomPropertyType(key: string): string | undefined {
+        const types = this.getCustomPropertyTypesObject();
+        return types?.[key];
+    }
+
+    setCustomPropertyType(key: string, type: string) {
+        const types = this.getCustomPropertyTypesObject();
+        types[key] = type;
+        this.customPropertyTypes = JSON.stringify(types, null, 2);
+    }
+
+    removeCustomPropertyType(key: string) {
+        const types = this.getCustomPropertyTypesObject();
+        delete types[key];
+        this.customPropertyTypes = Object.keys(types).length ? JSON.stringify(types, null, 2) : "";
+    }
+
     protected abstract onVisibleChanged(): void;
 
     get parentVisible() {
@@ -94,6 +156,41 @@ export abstract class Node extends HistoryObservable implements INode {
     }
 
     protected abstract onParentVisibleChanged(): void;
+
+    private getCustomPropertiesObject(): Record<string, any> {
+        const text = this.customProperties?.trim();
+        if (!text) return {};
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                return parsed as Record<string, any>;
+            }
+            return {};
+        } catch {
+            return {};
+        }
+    }
+
+    private getCustomPropertyTypesObject(): Record<string, string> {
+        const text = this.customPropertyTypes?.trim();
+        if (!text) return {};
+        try {
+            const parsed = JSON.parse(text);
+            if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+                return parsed as Record<string, string>;
+            }
+            return {};
+        } catch {
+            return {};
+        }
+    }
+
+    private inferCustomPropertyType(value: unknown): string {
+        if (typeof value === "boolean") return "boolean";
+        if (typeof value === "number") return "number";
+        if (typeof value === "string") return "string";
+        return "object";
+    }
 }
 
 export namespace INode {

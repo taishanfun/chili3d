@@ -14,6 +14,7 @@ import {
     ShapeType,
     VertexMeshData,
     VisualConfig,
+    VisualNode,
     XYZ,
 } from "chili-core";
 import { ISnap, MouseAndDetected, SnapData, SnapResult } from "../snap";
@@ -112,6 +113,9 @@ export abstract class SnapEventHandler<D extends SnapData = SnapData> implements
         if (view.document.mode === "2d" && this._snaped?.point) {
             this._snaped.point = view.workplane.project(this._snaped.point);
         }
+        if (this._snaped) {
+            this._snaped.nodes = this.detectNodes(view, event);
+        }
 
         this.snaps.forEach((snap) => snap.handleSnaped?.(view.document.visual.document, this._snaped));
     }
@@ -161,6 +165,20 @@ export abstract class SnapEventHandler<D extends SnapData = SnapData> implements
     private detectShapes(shapeType: ShapeType, view: IView, event: MouseEvent): MouseAndDetected {
         const shapes = view.detectShapes(shapeType, event.offsetX, event.offsetY, this.data.filter);
         return { shapes, view, mx: event.offsetX, my: event.offsetY };
+    }
+
+    private detectNodes(view: IView, event: MouseEvent): VisualNode[] {
+        const visuals = view.detectVisual(event.offsetX, event.offsetY);
+        const nodes: VisualNode[] = [];
+        const seen = new Set<string>();
+        for (const visual of visuals) {
+            const node = view.document.visual.context.getNode(visual);
+            if (!(node instanceof VisualNode)) continue;
+            if (seen.has(node.id)) continue;
+            seen.add(node.id);
+            nodes.push(node);
+        }
+        return nodes;
     }
 
     protected clearSnapPrompt() {

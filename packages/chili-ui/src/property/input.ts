@@ -127,6 +127,7 @@ export class InputProperty extends PropertyBase {
     }
 
     private isReadOnly(): boolean {
+        if (this.property.readOnly) return true;
         let des = Object.getOwnPropertyDescriptor(this.objects[0], this.property.name);
         if (!des) {
             let proto = Object.getPrototypeOf(this.objects[0]);

@@ -2,13 +2,17 @@ import {
     AsyncController,
     I18n,
     LeaderNode,
+    MTextNode,
     Precision,
     Property,
     ShapeMeshData,
+    ShapeType,
+    TextNode,
+    VisualNode,
     XYZ,
     command,
 } from "chili-core";
-import { Dimension, PointSnapData } from "../../snap";
+import { Dimension, PointSnapData, SnapResult } from "../../snap";
 import { IStep, PointStep } from "../../step";
 import { MultistepCommand } from "../multistepCommand";
 
@@ -18,7 +22,7 @@ import { MultistepCommand } from "../multistepCommand";
 })
 export class Leader extends MultistepCommand {
     @Property.define("leader.associative")
-    isAssociative = false;
+    isAssociative = true;
 
     @Property.define("common.confirm")
     readonly confirm = () => {
@@ -76,7 +80,18 @@ export class Leader extends MultistepCommand {
     };
 
     protected override executeMainTask(): void {
-        const points = this.stepDatas.map((d) => d.point!);
+        const start = this.stepDatas.at(0);
+        const end = this.stepDatas.at(-1);
+        if (!start || !end) return;
+
+        let endPoint = end.point!;
+
+        const endNode = end.nodes?.at(0);
+        if (endNode instanceof TextNode || endNode instanceof MTextNode) {
+            endPoint = endNode.worldTransform().ofPoint(XYZ.zero);
+        }
+
+        const points = this.stepDatas.map((d, i) => (i === this.stepDatas.length - 1 ? endPoint : d.point!));
         const node = LeaderNode.fromWorld(
             this.document,
             points,
@@ -84,7 +99,50 @@ export class Leader extends MultistepCommand {
             I18n.translate("command.create.leader"),
         );
         node.isAssociative = this.isAssociative;
+        if (node.isAssociative) {
+            this.applyAnchorFromSnap(node, start, true);
+            this.applyAnchorFromSnap(node, end, false);
+        }
         this.document.rootNode.add(node);
         this.document.visual.update();
+    }
+
+    private applyAnchorFromSnap(node: LeaderNode, snap: SnapResult, isStart: boolean) {
+        if (!snap.point) return;
+
+        const targetNode = this.tryGetOwnerNodeFromShapes(snap) ?? snap.nodes?.at(0);
+        if (!targetNode) return;
+
+        const anchorWorldPoint =
+            targetNode instanceof TextNode || targetNode instanceof MTextNode
+                ? targetNode.worldTransform().ofPoint(XYZ.zero)
+                : snap.point;
+
+        const worldInv = targetNode.worldTransform().invert();
+        if (!worldInv) return;
+        const localPoint = worldInv.ofPoint(anchorWorldPoint);
+
+        const shapeType: ShapeType | undefined = snap.shapes?.[0]?.shape?.shapeType;
+        const mode: "fixed" | "slide" =
+            shapeType === ShapeType.Edge || shapeType === ShapeType.Face ? "slide" : "fixed";
+
+        if (isStart) {
+            node.startNodeId = targetNode.id;
+            node.startShapeType = shapeType;
+            node.startIndexesHint = [...(snap.shapes?.[0]?.indexes ?? [])];
+            node.startLocalPoint = localPoint;
+            node.startMode = mode;
+        } else {
+            node.endNodeId = targetNode.id;
+            node.endLocalPoint = localPoint;
+            node.endMode = mode;
+        }
+    }
+
+    private tryGetOwnerNodeFromShapes(snap: SnapResult): VisualNode | undefined {
+        const owner = snap.shapes?.at(0)?.owner;
+        if (!owner) return undefined;
+        const node = snap.view.document.visual.context.getNode(owner);
+        return node instanceof VisualNode ? node : undefined;
     }
 }

@@ -1,7 +1,17 @@
 // Part of the Chili3d Project, under the AGPL-3.0 License.
 // See LICENSE file in the project root for full license information.
 
-import { IDocument, INode, IView, Matrix4, PubSub, Transaction, VisualNode, XYZ } from "chili-core";
+import {
+    IDocument,
+    INode,
+    IView,
+    LeaderNode,
+    Matrix4,
+    PubSub,
+    Transaction,
+    VisualNode,
+    XYZ,
+} from "chili-core";
 import { NodeSelectionHandler } from "chili-vis";
 
 export class EditEventHandler extends NodeSelectionHandler {
@@ -16,6 +26,10 @@ export class EditEventHandler extends NodeSelectionHandler {
               viewHandlerEnabledBefore: boolean;
               isActive: boolean;
               originalTransforms: Map<VisualNode, Matrix4>;
+              associative?: {
+                  nodeMap: Map<string, VisualNode>;
+                  leaders: LeaderNode[];
+              };
           }
         | undefined;
 
@@ -116,6 +130,7 @@ export class EditEventHandler extends NodeSelectionHandler {
         for (const node of topLevel) {
             this.dragState.originalTransforms.set(node, node.transform);
         }
+        this.dragState.associative = this.collectAssociativeState();
 
         this.document.history.disabled = true;
         this.document.visual.viewHandler.isEnabled = false;
@@ -133,6 +148,7 @@ export class EditEventHandler extends NodeSelectionHandler {
             node.transform = original.multiply(transform);
         }
 
+        this.updateAssociativeLeaders(new Set(this.dragState.originalTransforms.keys()).values());
         this.document.visual.update();
     }
 
@@ -153,6 +169,10 @@ export class EditEventHandler extends NodeSelectionHandler {
             for (const [node, original] of state.originalTransforms.entries()) {
                 node.transform = original.multiply(transform);
             }
+            this.updateAssociativeLeaders(
+                new Set(state.originalTransforms.keys()).values(),
+                state.associative,
+            );
         });
 
         this.document.visual.viewHandler.isEnabled = state.viewHandlerEnabledBefore;
@@ -175,6 +195,98 @@ export class EditEventHandler extends NodeSelectionHandler {
         this.showRect = true;
         this.dragState = undefined;
         this.document.visual.update();
+    }
+
+    private collectAssociativeState(): { nodeMap: Map<string, VisualNode>; leaders: LeaderNode[] } {
+        const nodeMap = new Map<string, VisualNode>();
+        const leaders: LeaderNode[] = [];
+        this.traverseNodes(this.document.rootNode, (node) => {
+            if (node instanceof VisualNode) {
+                nodeMap.set(node.id, node);
+                if (node instanceof LeaderNode) {
+                    leaders.push(node);
+                }
+            }
+        });
+        return { nodeMap, leaders };
+    }
+
+    private traverseNodes(root: INode, visitor: (node: INode) => void) {
+        const stack: INode[] = [root];
+        while (stack.length) {
+            const current = stack.pop()!;
+            visitor(current);
+            if (INode.isLinkedListNode(current)) {
+                let child = current.firstChild;
+                while (child) {
+                    stack.push(child);
+                    child = child.nextSibling;
+                }
+            }
+        }
+    }
+
+    private updateAssociativeLeaders(
+        movedNodes: Iterable<VisualNode>,
+        associative = this.dragState?.associative,
+    ) {
+        if (!associative) return;
+        const movedIds = new Set<string>();
+        for (const n of movedNodes) movedIds.add(n.id);
+        if (movedIds.size === 0) return;
+
+        for (const leader of associative.leaders) {
+            if (!leader.isAssociative) continue;
+            if (movedIds.has(leader.id)) continue;
+
+            const affectsStart = leader.startNodeId ? movedIds.has(leader.startNodeId) : false;
+            const affectsEnd = leader.endNodeId ? movedIds.has(leader.endNodeId) : false;
+            if (!affectsStart && !affectsEnd) continue;
+
+            this.recomputeLeaderEndpoints(leader, associative.nodeMap);
+        }
+    }
+
+    private recomputeLeaderEndpoints(leader: LeaderNode, nodeMap: Map<string, VisualNode>) {
+        const points = leader.points;
+        if (points.length === 0) return;
+
+        let startWorld: XYZ | undefined;
+        if (leader.startNodeId && leader.startLocalPoint) {
+            const startNode = nodeMap.get(leader.startNodeId);
+            if (startNode) {
+                startWorld = startNode.worldTransform().ofPoint(leader.startLocalPoint);
+            }
+        }
+        if (!startWorld) {
+            startWorld = leader.worldTransform().ofPoint(points[0] ?? XYZ.zero);
+        }
+
+        let endWorld: XYZ | undefined;
+        if (leader.endNodeId) {
+            const endNode = nodeMap.get(leader.endNodeId);
+            const endLocal = leader.endLocalPoint ?? XYZ.zero;
+            if (endNode) {
+                endWorld = endNode.worldTransform().ofPoint(endLocal);
+            }
+        }
+        if (!endWorld) {
+            endWorld = leader.worldTransform().ofPoint(points.at(-1) ?? XYZ.zero);
+        }
+
+        leader.transform = Matrix4.fromTranslation(startWorld.x, startWorld.y, startWorld.z);
+
+        const leaderWorldInv = leader.worldTransform().invert();
+        if (!leaderWorldInv) return;
+        const endLocalPoint = leaderWorldInv.ofPoint(endWorld);
+
+        const newPoints = [...points];
+        if (newPoints.length === 1) {
+            newPoints.push(endLocalPoint);
+        } else {
+            newPoints[newPoints.length - 1] = endLocalPoint;
+        }
+        leader.points = newPoints;
     }
 
     private getDragPoint(view: IView, event: PointerEvent): XYZ {
