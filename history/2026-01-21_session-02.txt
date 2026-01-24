@@ -1,0 +1,36 @@
+Date: 2026-01-21
+
+Corrected English question:
+- “Please continue.”
+
+中文总结：
+1) 完善设计文档
+- 更新了 componentization_v1：明确 Serialized 实际包含 version 字段（与类型定义的差异），补充了可理解的 Serialized 骨架示例；补充说明 DTO 层已有 WebComponentMapping（selection-change/node-change/command-execute）；更新 exportDxf 现状说明（suzhu 已提供 .dxf (edges) 用于验证通路）。
+
+2) suzhu 测试工具增强
+- 增加 “.dxf (edges)” 导出：将选中节点的 Edge Mesh 以 DXF R12（LINE）导出并下载（曲线按离散线段输出）。
+- README 补齐测试数据：增加 Serialized 骨架示例、可复制的 Patch 示例（update / updateBiz），并说明 .dxf (edges) 的行为与限制。
+
+3) 验证结果
+- 通过 TypeScript typecheck：npx tsc -p tsconfig.json --noEmit
+- 通过单测：npm test
+- 通过构建：npm run build（根项目）与 npm run build（suzhu）
+
+涉及文件：
+- docs/design/componentization_v1.md
+- suzhu/src/composables/useChiliApp.js
+- suzhu/README.md
+
+English summary:
+1) Design doc updates
+- Updated componentization_v1 to clarify that runtime Serialized includes a version field; added a “skeleton” Serialized example; noted existing DTO-layer WebComponentMapping (selection-change/node-change/command-execute); updated exportDxf status (suzhu now provides .dxf (edges) as a pipeline validation).
+
+2) suzhu test tool enhancements
+- Added “.dxf (edges)” export: exports selected nodes’ edge meshes to DXF R12 LINE entities and downloads the file (curves are discretized).
+- Expanded README with a Serialized skeleton and runnable Patch examples (update / updateBiz), plus DXF notes.
+
+3) Verification
+- Typecheck: npx tsc -p tsconfig.json --noEmit (pass)
+- Tests: npm test (pass)
+- Builds: npm run build (root) and npm run build (suzhu) (pass)
+

@@ -59,6 +59,30 @@ export abstract class Node extends HistoryObservable implements INode {
     }
 
     @Serializer.serialze()
+    get rev(): number {
+        return this.getPrivateValue("rev", 0);
+    }
+    set rev(value: number) {
+        this.setProperty("rev", value);
+    }
+
+    @Serializer.serialze()
+    get customProperties(): string {
+        return this.getPrivateValue("customProperties", "{}");
+    }
+    set customProperties(value: string) {
+        this.setProperty("customProperties", value);
+    }
+
+    @Serializer.serialze()
+    get customPropertyTypes(): string {
+        return this.getPrivateValue("customPropertyTypes", "{}");
+    }
+    set customPropertyTypes(value: string) {
+        this.setProperty("customPropertyTypes", value);
+    }
+
+    @Serializer.serialze()
     get visible(): boolean {
         return this.getPrivateValue("visible", true);
     }
@@ -78,6 +102,17 @@ export abstract class Node extends HistoryObservable implements INode {
     override disposeInternal(): void {
         this.document.visual.context.removeNode([this]);
         super.disposeInternal();
+    }
+
+    setCustomProperty(key: string, value: unknown) {
+        let props: Record<string, unknown> = {};
+        try {
+            props = JSON.parse(this.customProperties || "{}");
+        } catch {
+            props = {};
+        }
+        (props as any)[key] = value;
+        this.customProperties = JSON.stringify(props);
     }
 
     clone(): this {

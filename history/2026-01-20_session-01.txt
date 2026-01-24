@@ -1,0 +1,27 @@
+Date: 2026-01-20
+
+Corrected English question:
+- No English question was provided in this message.
+
+中文摘要（本轮对话）：
+- 自定义属性编辑交互从“仅 JSON 编辑”优化为“表格/列表编辑 + 原始 JSON 切换”，支持增删条目与多值提示。
+- 自定义属性增加类型支持（string/number/boolean/object），并为类型切换提供安全的值转换策略。
+- 数据层为自定义属性引入类型元数据存储（与值分离），尽量保持序列化/反序列化兼容。
+- 明确组件化使用场景：作为可嵌入其他前端项目的组件/SDK，支持全局渲染、局部增量更新、图元属性与业务属性编辑、DXF 导出。
+- 约定外部稳定 DTO 与 patch 协议（rev、mutationId、回声抑制、冲突处理方向：面板↔宿主双向同步）。
+- 发现当前代码库尚无 DXF 导出实现；已开始枚举全部图元类型与序列化入口以评估“全类型覆盖”差距。
+
+English summary (this round):
+- Improved custom properties editing from JSON-only to table/list editing with a raw JSON toggle, add/remove, and multi-value hinting.
+- Added type support for custom properties (string/number/boolean/object) with safe conversion on type change.
+- Introduced type-metadata storage for custom properties at the model layer while keeping serialization compatibility.
+- Clarified componentization goals: embeddable component/SDK with full render, partial incremental updates, entity + business properties editing, and DXF export.
+- Defined a stable external DTO and patch protocol (rev, mutationId, echo suppression, bidirectional panel↔host conflict strategy).
+- Noted DXF export is not implemented yet; started enumerating entity types and serialization entry points for full coverage.
+
+Pending items carried forward:
+- 枚举当前项目的图元类型与序列化入口
+- 输出 DTO v1 类型清单与字段映射草案
+- 设计 applyPatch 适配器与事件桥接细节
+- 定义 WebComponent 属性/事件映射表
+

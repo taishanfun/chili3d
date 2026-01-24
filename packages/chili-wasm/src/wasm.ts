@@ -8,6 +8,6 @@ declare global {
 }
 
 export async function initWasm() {
-    global.wasm = await MainModuleFactory();
-    return global.wasm;
+    globalThis.wasm = await MainModuleFactory();
+    return globalThis.wasm;
 }

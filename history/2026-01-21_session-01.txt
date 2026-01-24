@@ -1,0 +1,13 @@
+本次总结
+- suzhu 继续作为 chili3d 组件测试工具：保持 App.vue 精简，逻辑集中在 useChiliApp 与面板组件
+- 增强手动触发能力：增加 Undo/Redo/Save 快捷按钮，增加 view/edit 模式切换（通过 EditorService start/stop）
+- 增强导出能力：支持从当前选择导出为 dataExchange 支持的格式并下载（export(format)）
+
+涉及文件
+- suzhu/src/composables/useChiliApp.js
+- suzhu/src/components/ControlPanel.vue
+- suzhu/src/App.vue
+
+验证
+- suzhu: npm run build（通过）
+- repo: npm test（通过）

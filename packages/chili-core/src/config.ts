@@ -39,9 +39,10 @@ export const VisualConfig = new VisualItemConfig();
 const CONFIG_STORAGE_KEY = "config";
 
 export class Config extends Observable {
-    static readonly #instance = new Config();
+    static #instance: Config | undefined;
 
     static get instance() {
+        this.#instance ??= new Config();
         return this.#instance;
     }
 

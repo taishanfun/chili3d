@@ -1,0 +1,50 @@
+// Part of the Chili3d Project, under the AGPL-3.0 License.
+// See LICENSE file in the project root for full license information.
+var __decorate =
+    (this && this.__decorate) ||
+    function (decorators, target, key, desc) {
+        var c = arguments.length,
+            r =
+                c < 3
+                    ? target
+                    : desc === null
+                      ? (desc = Object.getOwnPropertyDescriptor(target, key))
+                      : desc,
+            d;
+        if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+            r = Reflect.decorate(decorators, target, key, desc);
+        else
+            for (var i = decorators.length - 1; i >= 0; i--)
+                if ((d = decorators[i]))
+                    r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+        return c > 3 && r && Object.defineProperty(target, key, r), r;
+    };
+import { FacebaseNode, Property, Serializer } from "chili-core";
+let PolygonNode = class PolygonNode extends FacebaseNode {
+    display() {
+        return "body.polygon";
+    }
+    get points() {
+        return this.getPrivateValue("points");
+    }
+    set points(value) {
+        this.setPropertyEmitShapeChanged("points", value);
+    }
+    constructor(document, points) {
+        super(document);
+        this.setPrivateValue("points", points);
+    }
+    generateShape() {
+        let wire = this.document.application.shapeFactory.polygon(this.points);
+        if (!wire.isOk || !this.isFace) return wire;
+        return wire.value.toFace();
+    }
+};
+__decorate(
+    [Serializer.serialze(), Property.define("polygon.points")],
+    PolygonNode.prototype,
+    "points",
+    null,
+);
+PolygonNode = __decorate([Serializer.register(["document", "points"])], PolygonNode);
+export { PolygonNode };

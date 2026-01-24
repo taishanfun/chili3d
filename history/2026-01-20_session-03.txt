@@ -1,0 +1,7 @@
+本轮变更概述
+- 在 f:\person\githup\chili3d\suzhu 创建 Vue3 宿主项目
+- 通过 AppBuilder 接入 chili3d，并提供全屏容器用于功能测试
+- 调整宿主入口与样式，复制 iconfont.js 与 index.css
+
+验证结果
+- npm run dev -- --host 启动成功（Vite 5173）

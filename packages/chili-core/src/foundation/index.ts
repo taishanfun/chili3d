@@ -10,6 +10,7 @@ export * from "./disposable";
 export * from "./dto";
 export * from "./equalityComparer";
 export * from "./gc";
+export * from "./hostNotification";
 export * from "./history";
 export * from "./id";
 export * from "./lazy";

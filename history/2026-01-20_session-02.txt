@@ -1,0 +1,10 @@
+本轮变更概述
+- 修复 Patch 适配器的节点查找，改为从 rootNode 递归遍历
+- 更新 remove/update/updateBiz 逻辑，使用父节点移除并加入 rev 冲突检查
+- 在 Node 中新增 rev、customProperties、customPropertyTypes，并实现 setCustomProperty
+- 将 WebComponent 的 ViewMode 重命名为 WebComponentViewMode 以避免导出冲突
+
+验证结果
+- npm test 失败：Config/ObjectStorage 初始化与 Precision 相关错误（既有问题）
+- npx tsc -p tsconfig.json --noEmit 通过
+- npx prettier --check . 失败：存在大量既有格式警告

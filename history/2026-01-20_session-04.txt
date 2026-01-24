@@ -1,0 +1,25 @@
+本次总结
+- 修复 Config 单例延迟初始化以避免与 ObjectStorage 的循环依赖
+- 调整 math 模块对 Precision 的直接引用，避免由 barrel 导入引发的初始化问题
+- 在 suzhu 的 Vite 配置中定义 __APP_VERSION__ 与 __DOCUMENT_VERSION__
+- 修复 wasm 初始化中对 global 的访问，改为 globalThis
+
+验证
+- 运行 npm run dev -- --host
+- 浏览器预览 http://localhost:5173/ 无报错
+
+本次总结
+- 检查 suzhu 测试工具与各面板/组合式实现的现状
+- 确认当前未需要新增代码调整
+
+验证
+- 未运行（本轮无代码修改）
+
+本次总结
+- 在 suzhu 中添加可视化嵌入框并托管 chili3d-main-window
+- 增加文档功能点映射状态面板（load/dump/applyPatch/selection 等）
+- 通过 NodeAdapter 在宿主侧执行基础 applyPatch 调用
+
+验证
+- 运行 npm run dev -- --host
+- 浏览器预览 http://localhost:5173/ 无报错

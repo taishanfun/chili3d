@@ -1,0 +1,30 @@
+{
+    "name": "suzhu",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "chili": "file:../packages/chili",
+        "chili-builder": "file:../packages/chili-builder",
+        "chili-controls": "file:../packages/chili-controls",
+        "chili-core": "file:../packages/chili-core",
+        "chili-geo": "file:../packages/chili-geo",
+        "chili-storage": "file:../packages/chili-storage",
+        "chili-three": "file:../packages/chili-three",
+        "chili-ui": "file:../packages/chili-ui",
+        "chili-vis": "file:../packages/chili-vis",
+        "chili-wasm": "file:../packages/chili-wasm",
+        "three": "0.175.0",
+        "three-mesh-bvh": "0.9.0",
+        "vue": "^3.5.24"
+    },
+    "devDependencies": {
+        "@vitejs/plugin-vue": "^6.0.1",
+        "vite": "^7.2.4"
+    }
+}

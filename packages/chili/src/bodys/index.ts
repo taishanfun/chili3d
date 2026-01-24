@@ -2,10 +2,14 @@
 // See LICENSE file in the project root for full license information.
 
 export * from "./box";
+export * from "./arc";
+export * from "./boolean";
 export * from "./circle";
 export * from "./cone";
 export * from "./cylinder";
 export * from "./ellipse";
+export * from "./face";
+export * from "./fuse";
 export * from "./line";
 export * from "./polygon";
 export * from "./prism";
@@ -14,3 +18,4 @@ export * from "./rect";
 export * from "./revolve";
 export * from "./sphere";
 export * from "./sweep";
+export * from "./wire";
