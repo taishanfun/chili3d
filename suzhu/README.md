@@ -129,6 +129,52 @@ Patch 示例 2：更新业务属性（对 VisualNode 生效）
 - 控制台 UI：[ControlPanel.vue](src/components/ControlPanel.vue)
 - 页面拼装与布局：[App.vue](src/App.vue)
 
+## 5. UI 配置（组件显示/隐藏）
+
+当 Chili3D 嵌入不同宿主时，可通过运行时配置控制界面组件显示/隐藏，无需改代码。
+
+### 5.1 配置文件（推荐，运行时生效）
+
+修改 `public/ui-config.json`，刷新页面即可生效：
+
+```json
+{
+    "sidebar": { "visible": true },
+    "ribbon": { "visible": true },
+    "profiles": {
+        "embed-minimal": {
+            "sidebar": { "visible": false },
+            "ribbon": { "visible": false }
+        }
+    }
+}
+```
+
+- `sidebar.visible`: 是否显示左侧栏（控制台/日志）
+- `ribbon.visible`: 是否显示顶部功能区（在 suzhu 中对应 `ChiliFrame` 的 header）
+- `profiles`: 可选，用于按“页面/场景”定义不同配置片段
+
+### 5.2 按页面/场景覆盖（同一宿主不同页面）
+
+如果同一个宿主在不同页面/路由嵌入 Chili3D 时需要不同 UI，可以通过 URL 参数做运行时覆盖：
+
+- `?uiProfile=embed-minimal`：从 `ui-config.json` 的 `profiles` 中选择一套配置
+- `?ui.sidebar=false` / `?ui.ribbon=false`：直接覆盖单个开关（优先级最高）
+- `?uiConfigUrl=/some/path/ui-config.json`：指定配置文件地址（便于宿主按页面下发不同配置）
+
+优先级（从低到高）：
+
+默认值 < `ui-config.json` 根配置 < `uiProfile` < 环境变量 < URL 参数覆盖
+
+### 5.2 环境变量（可选）
+
+也可在 `.env`（或构建环境）中配置：
+
+- `VITE_UI_SIDEBAR_VISIBLE=true|false`
+- `VITE_UI_RIBBON_VISIBLE=true|false`
+
+（环境变量优先级高于 `public/ui-config.json`，低于 URL 参数覆盖）
+
 ## English (Short)
 
 - This is a host-side Chili3D test console (Vue + Vite).

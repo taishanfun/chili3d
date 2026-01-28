@@ -10,6 +10,7 @@ import {
     PubSub,
     RibbonTab,
     debounce,
+    setCurrentApplication,
 } from "chili-core";
 import { Dialog } from "./dialog";
 import { Editor } from "./editor";
@@ -53,6 +54,12 @@ export class MainWindow extends HTMLElement implements IWindow {
             throw new Error("MainWindow is already inited");
         }
         this._inited = true;
+        setCurrentApplication(app);
+        (this as any).__chiliApp = app;
+        const activate = () => setCurrentApplication(app);
+        this.addEventListener("pointerdown", activate, true);
+        this.addEventListener("focusin", activate, true);
+        this.addEventListener("keydown", activate, true);
 
         await this.loadCss();
         await this.fetchIconFont();

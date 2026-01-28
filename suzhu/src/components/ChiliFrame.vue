@@ -6,12 +6,16 @@ defineProps({
     type: Array,
     default: () => [],
   },
+  showHeader: {
+    type: Boolean,
+    default: true,
+  },
 });
 </script>
 
 <template>
   <div class="frame">
-    <div class="frame-header">
+    <div v-if="showHeader" class="frame-header">
       <div class="frame-title">Chili3D Web Component Frame</div>
       <div class="frame-subtitle">chili3d-main-window</div>
     </div>

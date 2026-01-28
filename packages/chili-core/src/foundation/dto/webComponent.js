@@ -2,10 +2,12 @@
 // See LICENSE file in the project root for full license information.
 export const WebComponentMapping = {
     attributes: {
+        "document-mode": "documentMode",
         "view-mode": "viewMode",
     },
     properties: {
         data: "data",
+        documentMode: "documentMode",
         selectedIds: "selectedIds",
         viewMode: "viewMode",
     },

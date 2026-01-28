@@ -14,6 +14,27 @@
     - 类型化 API
     - 独立上下文（Document/History/EventBus）
 
+#### 1.1.1 多实例（Multi-Instance）定义与隔离边界
+
+多实例指：在同一宿主（同一浏览器页面/同一 window）中创建多个 Chili3D 应用实例，并分别承载独立的文档与交互。
+
+隔离目标（每个实例独立）：
+
+- Document / History / Selection / View
+- Services（CommandService、EditorService、HotkeyService 等以实例为单位）
+- EventBus（`PubSub.default` 以 Application 作用域分发事件）
+
+共享或需要特别注意的点（同一 window 下天然共享）：
+
+- `localStorage`（例如 `ObjectStorage.default` 的 key 前缀相同，属于跨实例共享）
+- `document.documentElement` 上的全局属性（例如 theme attribute）
+- 运行时资源缓存（WASM/模块加载缓存属于页面级共享）
+
+集成建议：
+
+- 需要“强隔离”时，优先使用 iframe（物理隔离 window/global、CSS、事件）。
+- 需要“同页多实例（同 DOM）”时，必须保证每个实例有独立 UI Root 容器，并通过“当前实例激活（focus/interaction）”机制把无上下文事件（如 `executeCommand`）路由到正确实例。
+
 ### 1.2 Web Component (`<chili3d-editor>`)
 
 - **职责**：作为 SDK 的外壳，适配 HTML 标准属性与事件。
@@ -318,6 +339,79 @@ suzhu 已在 `setActiveDocument` 时创建 `Chili3DNotificationService`，并默
 
 实现见：[useChiliApp.js](file:///f:/person/githup/chili3d/suzhu/src/composables/useChiliApp.js)
 
+### 8.4 页面元素显隐（UI Visibility）
+
+同一宿主在不同页面/路由嵌入 Chili3D 时，经常需要“显示不同的界面组件”（例如：是否显示 ribbon 功能区、是否显示侧边栏、是否只保留画布）。
+
+本能力属于“外壳层（Host / Web Component Wrapper）”职责，不属于 Core SDK（Core 仍保持 framework agnostic）。要求如下：
+
+- **可配置**：通过运行时配置改变显示/隐藏，无需改代码
+- **可扩展**：后续可新增更多可控 UI 元素
+- **无空白**：隐藏后布局自动回收（不保留占位）
+
+#### 8.4.1 配置模型（建议）
+
+```ts
+type UiVisibilityConfig = {
+    sidebar?: { visible?: boolean };
+    ribbon?: { visible?: boolean };
+    profiles?: Record<string, UiVisibilityConfig>;
+};
+```
+
+- 默认值：`sidebar.visible = true`、`ribbon.visible = true`
+- `profiles`：为“页面/场景”提供预设配置片段（例如 `embed-minimal`、`embed-no-sidebar`）
+
+#### 8.4.2 配置来源与优先级（建议）
+
+配置可按集成环境选择其一或组合使用：
+
+- 配置文件（运行时生效）：例如 `/ui-config.json`
+- Web Component attributes/properties：例如 `ui-profile` / `ui-config-url` / `sidebar-visible` / `ribbon-visible`
+- URL 参数：用于同一宿主不同页面快速覆盖（例如 `?uiProfile=embed-minimal&ui.sidebar=false`）
+- 环境变量：用于按构建环境（dev/staging/prod）切换默认策略
+
+优先级建议（从低到高）：
+
+默认值 < 配置文件根配置 < profile < 环境变量 < URL/属性覆盖
+
+#### 8.4.3 suzhu 示例（当前仓库已实现）
+
+suzhu 示例实现了基于运行时配置的显隐控制：
+
+- 配置文件：`suzhu/public/ui-config.json`
+- 配置加载：`suzhu/src/uiConfig.js`（支持 `uiProfile`、`uiConfigUrl`、`ui.sidebar`、`ui.ribbon` 等 URL 覆盖）
+- 渲染控制：`suzhu/src/App.vue`（控制侧边栏）、`suzhu/src/components/ChiliFrame.vue`（控制 header）
+
+### 8.5 多实例（Multi-Instance）
+
+本节记录“同一宿主嵌入多个 Chili3D 组件实例”的支持范围、典型方案与已落地实现点。
+
+#### 8.5.1 两种集成形态
+
+1. 多 iframe（推荐，强隔离）
+
+- 每个实例运行在独立 window 中，天然隔离全局事件、样式与热键。
+- 宿主与实例的通信使用 `postMessage` 或 `CustomEvent` 转发。
+
+2. 同页多实例（同 DOM）
+
+- 多个实例共享同一 window，需要主动处理全局单例与事件路由问题。
+- 要求每个实例有独立 UI Root（例如 `#appA/#appB`）以挂载 `chili3d-main-window`。
+
+#### 8.5.2 已落地的隔离策略（当前仓库）
+
+- EventBus：`PubSub.default` 按 Application 作用域进行订阅/发布分发，避免跨实例串线（若事件携带 `document/view` 参数，会路由到对应实例）。
+- Current Application：通过在 UI 交互（pointerdown/focusin/keydown）时激活当前实例，保证无上下文事件（例如 `executeCommand`）也能路由到正确实例。
+- Hotkey：热键监听从 `window` 收敛到 `app.mainWindow`，降低多实例争抢键盘事件的概率。
+
+#### 8.5.3 suzhu 示例入口
+
+suzhu 提供了两种多实例演示入口（便于对照）：
+
+- 多 iframe：`/?hostMode=multi`（同一页面嵌入两个 iframe）
+- 同页多实例（同 DOM）：`/?hostMode=multi-dom`（同一页面创建两个 Chili3D 实例并分别挂载到不同容器）
+
 ## 九、对外 API 详细说明（面向使用人员）
 
 本章节给出“对外 API / 对外事件”的可操作说明，并说明与当前仓库实现的对应关系，便于集成与测试。
@@ -347,7 +441,8 @@ Chili3D 当前仓库里同时存在两套“对外数据形态”：
 宿主侧建议用 `AppBuilder` 构建应用并挂载 UI：
 
 - `new AppBuilder().useIndexedDB().useWasmOcc().useThree().useUI().build()`
-- 其中 `useUI()` 会把 UI 挂到 `#app` DOM 节点，并创建 `chili3d-main-window`
+- `useUI(dom?: HTMLElement | string)`：不传入参数时挂载到 `#app`；传入时可挂载到指定容器（用于同页多实例）
+- `useUI()` 会创建 `chili3d-main-window` 并把 UI 插入到目标容器
 
 ### 9.3 Chili3D 对外 API（详细行为）
 

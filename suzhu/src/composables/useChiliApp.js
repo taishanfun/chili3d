@@ -775,10 +775,10 @@ export function useChiliApp() {
         );
     };
 
-    const init = async () => {
+    const init = async (uiRoot = "app") => {
         ensureSerializerRegistration();
         bindHostListeners();
-        const app = await new AppBuilder().useIndexedDB().useWasmOcc().useThree().useUI().build();
+        const app = await new AppBuilder().useIndexedDB().useWasmOcc().useThree().useUI(uiRoot).build();
         appRef = app;
         exportFormats.value = [".dxf (edges)", ...appRef.dataExchange.exportFormats()];
         const doc = await app.newDocument(newDocumentName.value, newDocumentMode.value);

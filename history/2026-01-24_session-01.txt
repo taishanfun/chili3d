@@ -1,0 +1,56 @@
+优化后提示词（Optimized Prompt）
+- 继续完成 Chili3D 在“同一宿主页面”内的多实例嵌入支持：识别并消除全局单例冲突点（PubSub/default、currentApplication、全局热键等），实现实例级隔离与路由；同时在 suzhu 中提供可运行的多实例示例并完成构建/测试验证。
+
+英文问题语法校验（English Grammar Check）
+- 原英文问题语法无误：Continue
+
+核心需求（Core Requirements）
+- 同一宿主可嵌入多个 Chili3D 组件实例，并尽量实现事件/状态隔离。
+- suzhu 提供示例（同页面多实例），并确保构建与测试通过。
+
+关键结论（Key Conclusions）
+- 之前的多实例主要依赖 iframe 物理隔离；要在“同一 window/DOM”内多实例，需要解决至少三类全局冲突：
+  1) PubSub.default 全局事件总线导致跨实例串线
+  2) getCurrentApplication/setCurrentApplication 的单例限制阻止创建第二个 Application
+  3) 全局 window 级热键监听导致多实例抢占/串扰
+
+实操方案（Implementation Plan）
+- 将 PubSub.default 改为“按 Application 作用域”分发：
+  - sub/remove 绑定到当前 application 的总线
+  - pub 若参数能推断出 application（document/view），则路由到对应 application；否则使用当前 application
+- 取消 Application 的“仅允许单例”限制，并在关键 API 调用前设置当前 application
+- 将 HotkeyService 的监听从 window 收敛到 app.mainWindow（聚焦实例生效）
+- 在 chili-ui MainWindow 内通过 pointerdown/focusin/keydown（capture）激活当前 application，确保 executeCommand 等无上下文事件能路由到正确实例
+- 扩展 AppBuilder.useUI 支持指定 UI 根节点（HTMLElement 或 id），便于同页多实例分别挂载到不同容器
+- suzhu 示例新增 hostMode=multi-dom：在同一页面渲染两个实例并分别 init 到不同容器
+
+落地改动（Applied Changes）
+- PubSub 按 application 作用域分发：
+  - f:\person\githup\chili3d\packages\chili-core\src\foundation\pubsub.ts
+  - f:\person\githup\chili3d\packages\chili-core\src\foundation\pubsub.js
+- 允许多 Application 实例并在关键路径设置 currentApplication：
+  - f:\person\githup\chili3d\packages\chili\src\application.ts
+  - f:\person\githup\chili3d\packages\chili\src\application.js
+- 热键监听作用域从 window 收敛到 mainWindow：
+  - f:\person\githup\chili3d\packages\chili\src\services\hotkeyService.ts
+  - f:\person\githup\chili3d\packages\chili\src\services\hotkeyService.js
+- MainWindow 交互时激活当前 application（保障事件路由）：
+  - f:\person\githup\chili3d\packages\chili-ui\src\mainWindow.ts
+  - f:\person\githup\chili3d\packages\chili-ui\src\mainWindow.js
+- AppBuilder.useUI 支持传入根节点/根节点 id：
+  - f:\person\githup\chili3d\packages\chili-builder\src\appBuilder.ts
+  - f:\person\githup\chili3d\packages\chili-builder\src\appBuilder.js
+- suzhu 同页多实例示例：
+  - f:\person\githup\chili3d\suzhu\src\composables\useChiliApp.js（init(uiRoot)）
+  - f:\person\githup\chili3d\suzhu\src\App.vue（hostMode=multi-dom + 可手动添加实例）
+- 设计文档补充多实例说明：
+  - f:\person\githup\chili3d\docs\design\componentization_v1.md（多实例嵌入/隔离策略/示例入口）
+
+验证结果（Verification）
+- 根仓库测试：npm test 通过
+- 根仓库构建：npm run build 通过（仅体积告警）
+- suzhu 构建：npm run build 通过
+- suzhu 手动验证：hostMode=multi-dom 页面可点击“添加实例”持续增开实例
+
+归档路径（Archive Path）
+- f:\person\githup\chili3d\history\2026-01-24_session-01.txt

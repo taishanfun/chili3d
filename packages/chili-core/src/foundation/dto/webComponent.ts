@@ -3,10 +3,14 @@
 
 import { EntityDTO, PatchEnvelope } from "./node";
 
+export type WebComponentDocumentMode = "2d" | "3d";
+
 export type WebComponentViewMode = "view" | "edit";
 
 export interface ChiliWebComponentProps {
     data: EntityDTO | EntityDTO[];
+
+    documentMode: WebComponentDocumentMode;
 
     viewMode: WebComponentViewMode;
 
@@ -23,10 +27,12 @@ export interface ChiliWebComponentEvents {
 
 export const WebComponentMapping = {
     attributes: {
+        "document-mode": "documentMode",
         "view-mode": "viewMode",
     },
     properties: {
         data: "data",
+        documentMode: "documentMode",
         selectedIds: "selectedIds",
         viewMode: "viewMode",
     },

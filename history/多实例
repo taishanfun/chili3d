@@ -1,0 +1,229 @@
+toolName: todo_write
+            
+status: success
+          
+Todos updated: 1 items
+          
+
+        
+            
+toolName: todo_write
+            
+status: success
+          
+Todos updated: 1 items
+          
+**优化后提示词（Prompt 优化）**  
+- 请明确 Chili3D“多实例（Multi-Instance）”的具体使用场景与隔离边界，重点区分：①同一页面内在不同 div/容器同时挂载多个 Chili3D 组件；②在不同浏览器 Tab 中分别打开 Chili3D 组件。请给出清晰定义、典型场景清单，以及两者在隔离/冲突点上的差异说明。
+
+---
+
+## 中文回答
+
+**多实例的两个明确场景（按隔离边界划分）**
+
+- **场景 A：同一页面、同一 Tab、同一 JS 运行时里，多个 div 挂载多个 Chili3D 实例（Same-Page Multi-DOM）**  
+  - 定义：多个实例共享同一个 `window/document`（同一事件源、同一全局对象），但各自渲染到不同容器节点。  
+  - 典型用途：  
+    - 左右对比/评审：A 模型 vs B 模型，或同模型不同配置（UI、渲染、测量）。  
+    - 多视图协同：2D/3D 并排、不同相机视角并排、主视图+缩略预览。  
+    - 多文档工作区：同一页面同时打开多个文档或多个零件。  
+  - 隔离重点：需要“应用级隔离”，否则容易出现跨实例串扰（例如全局 PubSub、全局热键、全局 currentApplication、事件监听挂到 window 等）。
+
+- **场景 B：不同浏览器 Tab（或不同窗口）分别打开 Chili3D（Multi-Tab / Multi-Window）**  
+  - 定义：每个 Tab 都有独立的 JS 运行时与 `window`，天然隔离绝大多数运行时状态与事件。  
+  - 典型用途：  
+    - 多任务：一个 Tab 编辑，另一个 Tab 查看或导出。  
+    - 多文档并行：不同项目/不同文档分别打开。  
+  - 隔离重点：一般不需要做“同页隔离”那套改造；但要注意**共享持久化存储**带来的间接耦合：  
+    - 若多个 Tab 读写同一份 IndexedDB/localStorage 数据，可能产生“最后写入覆盖”“并发编辑冲突”。  
+    - 如果业务允许同时编辑同一文档，需要额外的文档锁/版本校验/冲突解决策略（这属于协作/存储层设计，不是 UI 容器隔离问题）。
+
+**一句话总结边界**  
+- **同页多 div**：属于“强多实例”——必须做实例级事件/状态隔离。  
+- **多 Tab**：属于“弱多实例”——运行时天然隔离，主要关注存储并发与跨 Tab 协调（若有需求）。
+
+---
+
+## English Answer
+
+**Two explicit multi-instance scenarios (classified by isolation boundary)**
+
+- **Scenario A: Multiple instances mounted into different divs on the same page/tab (Same-Page Multi-DOM)**  
+  - Definition: multiple Chili3D instances share the same `window/document` (same global objects and event sources) but render into different DOM containers.  
+  - Typical use cases:  
+    - Side-by-side comparison/review (A vs B models or configs).  
+    - Multi-view workflows (2D/3D side-by-side, multiple camera views, main + preview).  
+    - Multi-document workspace within a single page.  
+  - Isolation focus: requires *application-level isolation*; otherwise cross-instance interference can happen (global PubSub, global hotkeys, global currentApplication, window-level listeners, etc.).
+
+- **Scenario B: Different browser tabs (or windows) each running a Chili3D component (Multi-Tab / Multi-Window)**  
+  - Definition: each tab has its own JS runtime and `window`, so most runtime state/events are naturally isolated.  
+  - Typical use cases:  
+    - Multitasking (edit in one tab, view/export in another).  
+    - Parallel documents/projects across tabs.  
+  - Isolation focus: usually no need for same-page isolation changes, but watch out for **shared persistence** (IndexedDB/localStorage):  
+    - concurrent writes may overwrite (“last write wins”) or cause conflicts.  
+    - if concurrent editing of the same document is required, you’ll need locking/version checks/conflict resolution (a storage/collaboration concern, not a DOM mounting concern).
+
+**One-line boundary summary**  
+- **Same-page multi-div**: “strong multi-instance” — needs instance-level event/state isolation.  
+- **Multi-tab**: “weak multi-instance” — runtime is isolated; mainly consider storage concurrency/cross-tab coordination if needed.
+
+
+toolName: todo_write
+            
+status: success
+          
+Todos updated: 3 items
+          
+
+        
+            
+toolName: search_codebase
+            
+status: success
+          
+query: Chili3D web component 的入口、是否使用 customElements.define、chili3d-main-window 相关实现与导出
+          
+
+        
+            
+toolName: search_codebase
+            
+status: success
+          
+query: 查找实际的 Chili Web Component 自定义元素实现（使用 ChiliWebComponentProps/WebComponentMapping/selection-change/node-change/command-execute）
+          
+
+        
+            
+toolName: view_files
+            
+status: success
+          
+            
+filePath: f:\person\githup\chili3d\packages\chili-ui\src\mainWindow.ts
+          
+
+        
+            
+toolName: search_codebase
+            
+status: success
+          
+query: chili3d-main-window 在哪里被创建/使用（AppBuilder.useUI 或其他）
+          
+
+        
+            
+toolName: search_codebase
+            
+status: success
+          
+query: CustomEventTransport PostMessageTransport Chili3DNotificationService 的用途与在应用中的集成点
+          
+
+        
+            
+toolName: todo_write
+            
+status: success
+          
+Todos updated: 3 items
+          
+
+        
+            
+toolName: view_folder
+            
+status: success
+          
+f:\person\githup\chili3d\packages\chili-ui\src
+          
+
+        
+            
+toolName: search_by_regex
+            
+status: success
+          
+query: selection-change|node-change|command-execute
+          
+
+        
+            
+toolName: todo_write
+            
+status: success
+          
+Todos updated: 3 items
+          
+**优化后提示词（Prompt 优化）**  
+- 请基于当前仓库实现，说明“Chili3D Web 组件”目前已经落地了哪些能力：包括组件本体（自定义元素/tag 名称、对外初始化方式）、UI 模块、宿主集成方式（事件/通知/配置）、以及多实例相关能力与已知限制；同时指出目前仅存在类型/约定但尚未实现的 WebComponent Props/Events 映射接口。
+
+---
+
+## 中文回答
+
+目前仓库里“真正落地可用的 Web 组件”核心是 **`<chili3d-main-window>`**（MainWindow 自定义元素），它承载整套 UI 与编辑体验；此外有一批内部 UI 子组件（同样是 custom elements）。
+
+**1）Web 组件本体与挂载方式**  
+- 自定义元素：`<chili3d-main-window>`，定义见：[mainWindow.ts:L21-L125](file:///f:/person/githup/chili3d/packages/chili-ui/src/mainWindow.ts#L21-L125)  
+- 初始化方式：通过 `MainWindow.init(app)` 绑定某个 `Application`，并在组件交互时激活对应 application（为多实例路由做准备），见：[mainWindow.ts:L52-L70](file:///f:/person/githup/chili3d/packages/chili-ui/src/mainWindow.ts#L52-L70)  
+- 宿主挂载：`AppBuilder.useUI(dom?: HTMLElement|string)` 可把 UI 挂到指定容器（或默认 `#app`），见：[appBuilder.ts:L57-L75](file:///f:/person/githup/chili3d/packages/chili-builder/src/appBuilder.ts#L57-L75)
+
+**2）已实现的 UI 模块（都在 chili-ui 内）**  
+- Editor/Ribbon：编辑器与功能区（Ribbon）相关 custom elements 已定义（例如 `chili-editor`、`chili-ribbon`），入口示例见：[editor.ts:L135-L142](file:///f:/person/githup/chili3d/packages/chili-ui/src/editor.ts#L135-L142) / [ribbon.js:L266-L280](file:///f:/person/githup/chili3d/packages/chili-ui/src/ribbon/ribbon.js#L266-L280)  
+- Viewport：视口与交互（layoutViewport/viewport/flyout 等模块）在 `packages/chili-ui/src/viewport/*`  
+- Project/Property/Statusbar：工程树、属性面板、状态栏与 snap 配置等模块在 `packages/chili-ui/src/project/*`、`packages/chili-ui/src/property/*`、`packages/chili-ui/src/statusbar/*`  
+- 通用 UI：Dialog/Toast/Permanent 等弹窗与提示，在 `packages/chili-ui/src/dialog.ts`、`toast/*`、`permanent/*`
+
+**3）宿主集成与事件/通知能力**  
+- “宿主通知”服务已实现：可把 selectionChanged / nodeChanged / propertyChanged 通过 `CustomEvent` 或 `postMessage` 发给宿主，见：[hostNotification.ts](file:///f:/person/githup/chili3d/packages/chili-core/src/foundation/hostNotification.ts)  
+- 说明：这套通知机制是能力层实现；是否启用取决于宿主是否创建 `Chili3DNotificationService`（suzhu 里演示了如何启用并打印日志）。
+
+**4）多实例相关：目前已经落地的部分**  
+- 同页多 div（same-page multi-dom）：`AppBuilder.useUI(容器)` + `MainWindow` 内的激活逻辑，使得同一页面可以启动多个实例并尽量避免交互串线（你们在 suzhu 的 `hostMode=multi-dom` 已做了演示）。  
+- iframe 多实例：通过 iframe 天然隔离，同样有示例入口（suzhu 的 `hostMode=multi`）。  
+- 多 Tab：天然是不同 `window` 的隔离场景；主要关注存储并发（例如 IndexedDB）而不是 UI 事件串扰。
+
+**5）目前“有约定但尚未落地”的 WebComponent Props/Events 映射**  
+- `ChiliWebComponentProps / ChiliWebComponentEvents / WebComponentMapping` 目前只有 DTO 类型与映射常量定义，但仓库里没有找到对应的自定义元素实现去真正“按属性传 data/viewMode/selectedIds、并抛 selection-change/node-change/command-execute 事件”。定义见：[webComponent.ts](file:///f:/person/githup/chili3d/packages/chili-core/src/foundation/dto/webComponent.ts)
+
+---
+
+## English Answer
+
+In this repo, the actually working “Web Component” is **`<chili3d-main-window>`** (the MainWindow custom element), which hosts the full UI/editor experience. There are also many internal UI custom elements.
+
+**1) Component entry & mounting**  
+- Custom element: `<chili3d-main-window>`, defined in [mainWindow.ts:L21-L125](file:///f:/person/githup/chili3d/packages/chili-ui/src/mainWindow.ts#L21-L125)  
+- Initialization: `MainWindow.init(app)` binds an `Application` and activates the correct application on user interaction (important for multi-instance routing), see [mainWindow.ts:L52-L70](file:///f:/person/githup/chili3d/packages/chili-ui/src/mainWindow.ts#L52-L70)  
+- Host mounting: `AppBuilder.useUI(dom?: HTMLElement|string)` mounts the UI into a specified container (or `#app` by default), see [appBuilder.ts:L57-L75](file:///f:/person/githup/chili3d/packages/chili-builder/src/appBuilder.ts#L57-L75)
+
+**2) Implemented UI modules (in chili-ui)**  
+- Editor/Ribbon: implemented as custom elements (e.g. `chili-editor`, `chili-ribbon`), see [editor.ts:L135-L142](file:///f:/person/githup/chili3d/packages/chili-ui/src/editor.ts#L135-L142) / [ribbon.js:L266-L280](file:///f:/person/githup/chili3d/packages/chili-ui/src/ribbon/ribbon.js#L266-L280)  
+- Viewport: viewport and interaction modules under `packages/chili-ui/src/viewport/*`  
+- Project/Property/Statusbar: under `packages/chili-ui/src/project/*`, `property/*`, `statusbar/*`  
+- Common UI: dialogs/toasts/permanent panels under `dialog.ts`, `toast/*`, `permanent/*`
+
+**3) Host integration / notifications**  
+- A host notification service exists, emitting selection/node/property changes via `CustomEvent` or `postMessage`, see [hostNotification.ts](file:///f:/person/githup/chili3d/packages/chili-core/src/foundation/hostNotification.ts).  
+- Whether it’s active depends on the host creating `Chili3DNotificationService` (suzhu demonstrates this).
+
+**4) Multi-instance support already landed**  
+- Same-page multi-div (multi-dom): supported via `AppBuilder.useUI(container)` + MainWindow activation logic to reduce cross-instance interference.  
+- Iframe multi-instance: naturally isolated and demonstrated in suzhu.  
+- Multi-tab: naturally isolated per tab; the main concern becomes storage concurrency (e.g. IndexedDB), not UI event conflicts.
+
+**5) Defined but not implemented: Props/Events mapping**  
+- `ChiliWebComponentProps/Events` and `WebComponentMapping` exist as DTO/type definitions, but there is no actual custom element implementation wiring properties (`data/viewMode/selectedIds`) and emitting events (`selection-change/node-change/command-execute`). See [webComponent.ts](file:///f:/person/githup/chili3d/packages/chili-core/src/foundation/dto/webComponent.ts)
+
+---
+
+**本轮对话总结与归档（Summary & Archive Path）**  
+- 优化后提示词：已在本回复开头给出  
+- 核心需求：澄清当前仓库“Web 组件”到底实现了哪些能力、哪些只是约定未落地  
+- 关键结论：已落地的是 `chili3d-main-window` 及其 UI 子组件与宿主通知机制；DTO 形式的 WebComponent props/events 映射尚无具体实现  
+- 归档路径（仅标注）：`f:\person\githup\chili3d\history\`

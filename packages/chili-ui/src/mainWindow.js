@@ -1,6 +1,6 @@
 // Part of the Chili3d Project, under the AGPL-3.0 License.
 // See LICENSE file in the project root for full license information.
-import { PubSub, debounce } from "chili-core";
+import { PubSub, debounce, setCurrentApplication } from "chili-core";
 import { Dialog } from "./dialog";
 import { Editor } from "./editor";
 import { Home } from "./home";
@@ -38,6 +38,12 @@ export class MainWindow extends HTMLElement {
             throw new Error("MainWindow is already inited");
         }
         this._inited = true;
+        setCurrentApplication(app);
+        this.__chiliApp = app;
+        const activate = () => setCurrentApplication(app);
+        this.addEventListener("pointerdown", activate, true);
+        this.addEventListener("focusin", activate, true);
+        this.addEventListener("keydown", activate, true);
         await this.loadCss();
         await this.fetchIconFont();
         this._initHome(app);

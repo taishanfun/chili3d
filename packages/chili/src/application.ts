@@ -3,7 +3,6 @@
 
 import {
     DOCUMENT_FILE_EXTENSION,
-    getCurrentApplication,
     I18n,
     IApplication,
     ICommand,
@@ -59,9 +58,6 @@ export class Application implements IApplication {
     }
 
     constructor(option: ApplicationOptions) {
-        if (getCurrentApplication() !== undefined) {
-            throw new Error("Only one application can be created");
-        }
         setCurrentApplication(this);
         this.visualFactory = option.visualFactory;
         this.shapeFactory = option.shapeFactory;
@@ -77,7 +73,7 @@ export class Application implements IApplication {
     }
 
     private initWindowEvents() {
-        window.onbeforeunload = this.handleWindowUnload;
+        window.addEventListener("beforeunload", this.handleWindowUnload);
         this.mainWindow?.addEventListener(
             "dragstart",
             (ev) => {
@@ -115,6 +111,7 @@ export class Application implements IApplication {
     };
 
     async importFiles(files: FileList | undefined) {
+        setCurrentApplication(this);
         if (!files || files.length === 0) {
             return;
         }
@@ -124,6 +121,7 @@ export class Application implements IApplication {
     }
 
     private loadDocumentsWithLoading(opens: File[]) {
+        setCurrentApplication(this);
         PubSub.default.pub(
             "showPermanent",
             async () => {
@@ -152,12 +150,14 @@ export class Application implements IApplication {
     }
 
     async openDocument(id: string): Promise<IDocument | undefined> {
+        setCurrentApplication(this);
         const document = await Document.open(this, id);
         await this.createActiveView(document);
         return document;
     }
 
     async newDocument(name: string, mode: IDocument["mode"] = "3d"): Promise<IDocument> {
+        setCurrentApplication(this);
         const document = new Document(this, name, Id.generate(), mode);
         const lightGray = new Material(document, "LightGray", 0xdedede);
         const deepGray = new Material(document, "DeepGray", 0x898989);
@@ -167,12 +167,14 @@ export class Application implements IApplication {
     }
 
     async loadDocument(data: Serialized): Promise<IDocument | undefined> {
+        setCurrentApplication(this);
         const document = await Document.load(this, data);
         await this.createActiveView(document);
         return document;
     }
 
     protected async createActiveView(document: IDocument | undefined) {
+        setCurrentApplication(this);
         if (document === undefined) return undefined;
         const viewName = document.mode === "2d" ? "2d" : "3d";
         const view = document.visual.createView(viewName, Plane.XY);

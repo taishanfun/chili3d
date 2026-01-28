@@ -35,13 +35,14 @@ export class AppBuilder {
         });
         return this;
     }
-    useUI() {
+    useUI(dom) {
         this._inits.push(async () => {
             Logger.info("initializing MainWindow");
             this.loadAdditionalI18n();
             let ui = await import("chili-ui");
-            const app = document.getElementById("app");
-            this._window = new ui.MainWindow(await this.getRibbonTabs(), "iconfont.js", app);
+            const resolved = typeof dom === "string" ? document.getElementById(dom) : dom;
+            const root = resolved ?? document.getElementById("app") ?? undefined;
+            this._window = new ui.MainWindow(await this.getRibbonTabs(), "iconfont.js", root);
         });
         return this;
     }

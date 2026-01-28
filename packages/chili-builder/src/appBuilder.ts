@@ -57,15 +57,19 @@ export class AppBuilder {
         return this;
     }
 
-    useUI(): this {
+    useUI(dom?: HTMLElement | string): this {
         this._inits.push(async () => {
             Logger.info("initializing MainWindow");
 
             this.loadAdditionalI18n();
 
             let ui = await import("chili-ui");
-            const app = document.getElementById("app") as HTMLElement;
-            this._window = new ui.MainWindow(await this.getRibbonTabs(), "iconfont.js", app);
+            const resolved =
+                typeof dom === "string"
+                    ? (document.getElementById(dom) as HTMLElement | null)
+                    : (dom as HTMLElement | undefined);
+            const root = resolved ?? (document.getElementById("app") as HTMLElement | null) ?? undefined;
+            this._window = new ui.MainWindow(await this.getRibbonTabs(), "iconfont.js", root);
         });
         return this;
     }

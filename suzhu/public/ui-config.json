@@ -1,0 +1,20 @@
+{
+    "sidebar": {
+        "visible": true
+    },
+    "ribbon": {
+        "visible": true
+    },
+    "profiles": {
+        "embed-minimal": {
+            "sidebar": { "visible": false },
+            "ribbon": { "visible": false }
+        },
+        "embed-no-sidebar": {
+            "sidebar": { "visible": false }
+        },
+        "embed-no-ribbon": {
+            "ribbon": { "visible": false }
+        }
+    }
+}

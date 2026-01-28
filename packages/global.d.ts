@@ -11,6 +11,11 @@ declare module "*.wasm" {
     export default fun;
 }
 
+declare module "*.wasm?url" {
+    const url: string;
+    export default url;
+}
+
 declare module "*.cur" {
     const cur: string;
     export default cur;

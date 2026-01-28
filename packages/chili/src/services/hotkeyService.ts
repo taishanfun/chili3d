@@ -26,6 +26,7 @@ const DefaultKeyMap: HotkeyMap = {
 export class HotkeyService implements IService {
     private app?: IApplication;
     private readonly _keyMap = new Map<string, CommandKeys>();
+    private eventTarget: EventTarget = window;
 
     constructor() {
         this.addMap(DefaultKeyMap);
@@ -37,14 +38,16 @@ export class HotkeyService implements IService {
     }
 
     start(): void {
-        window.addEventListener("keydown", this.eventHandlerKeyDown);
-        window.addEventListener("keydown", this.commandKeyDown);
+        this.eventTarget = (this.app?.mainWindow as any) ?? window;
+        this.eventTarget.addEventListener("keydown", this.eventHandlerKeyDown as any);
+        this.eventTarget.addEventListener("keydown", this.commandKeyDown as any);
         Logger.info(`${HotkeyService.name} started`);
     }
 
     stop(): void {
-        window.removeEventListener("keydown", this.eventHandlerKeyDown);
-        window.removeEventListener("keydown", this.commandKeyDown);
+        this.eventTarget.removeEventListener("keydown", this.eventHandlerKeyDown as any);
+        this.eventTarget.removeEventListener("keydown", this.commandKeyDown as any);
+        this.eventTarget = window;
         Logger.info(`${HotkeyService.name} stoped`);
     }
 

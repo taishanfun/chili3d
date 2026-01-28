@@ -12,6 +12,7 @@ const DefaultKeyMap = {
 export class HotkeyService {
     app;
     _keyMap = new Map();
+    eventTarget = window;
     constructor() {
         this.addMap(DefaultKeyMap);
     }
@@ -20,13 +21,15 @@ export class HotkeyService {
         Logger.info(`${HotkeyService.name} registed`);
     }
     start() {
-        window.addEventListener("keydown", this.eventHandlerKeyDown);
-        window.addEventListener("keydown", this.commandKeyDown);
+        this.eventTarget = this.app?.mainWindow ?? window;
+        this.eventTarget.addEventListener("keydown", this.eventHandlerKeyDown);
+        this.eventTarget.addEventListener("keydown", this.commandKeyDown);
         Logger.info(`${HotkeyService.name} started`);
     }
     stop() {
-        window.removeEventListener("keydown", this.eventHandlerKeyDown);
-        window.removeEventListener("keydown", this.commandKeyDown);
+        this.eventTarget.removeEventListener("keydown", this.eventHandlerKeyDown);
+        this.eventTarget.removeEventListener("keydown", this.commandKeyDown);
+        this.eventTarget = window;
         Logger.info(`${HotkeyService.name} stoped`);
     }
     canHandleKey(e) {

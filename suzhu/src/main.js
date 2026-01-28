@@ -1,5 +1,7 @@
 import { createApp } from "vue";
-import "./style.css";
 import App from "./App.vue";
+import "./style.css";
+import { loadUiConfig } from "./uiConfig";
 
-createApp(App).mount("#host");
+const uiConfig = await loadUiConfig();
+createApp(App, { uiConfig }).mount("#host");

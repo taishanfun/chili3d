@@ -2,7 +2,6 @@
 // See LICENSE file in the project root for full license information.
 import {
     DOCUMENT_FILE_EXTENSION,
-    getCurrentApplication,
     I18n,
     Id,
     Material,
@@ -33,9 +32,6 @@ export class Application {
         PubSub.default.pub("activeViewChanged", value);
     }
     constructor(option) {
-        if (getCurrentApplication() !== undefined) {
-            throw new Error("Only one application can be created");
-        }
         setCurrentApplication(this);
         this.visualFactory = option.visualFactory;
         this.shapeFactory = option.shapeFactory;
@@ -48,7 +44,7 @@ export class Application {
         this.initWindowEvents();
     }
     initWindowEvents() {
-        window.onbeforeunload = this.handleWindowUnload;
+        window.addEventListener("beforeunload", this.handleWindowUnload);
         this.mainWindow?.addEventListener(
             "dragstart",
             (ev) => {
@@ -84,6 +80,7 @@ export class Application {
         }
     };
     async importFiles(files) {
+        setCurrentApplication(this);
         if (!files || files.length === 0) {
             return;
         }
@@ -92,6 +89,7 @@ export class Application {
         importFiles(this, imports);
     }
     loadDocumentsWithLoading(opens) {
+        setCurrentApplication(this);
         PubSub.default.pub(
             "showPermanent",
             async () => {
@@ -118,11 +116,13 @@ export class Application {
         return { opens, imports };
     }
     async openDocument(id) {
+        setCurrentApplication(this);
         const document = await Document.open(this, id);
         await this.createActiveView(document);
         return document;
     }
     async newDocument(name, mode = "3d") {
+        setCurrentApplication(this);
         const document = new Document(this, name, Id.generate(), mode);
         const lightGray = new Material(document, "LightGray", 0xdedede);
         const deepGray = new Material(document, "DeepGray", 0x898989);
@@ -131,11 +131,13 @@ export class Application {
         return document;
     }
     async loadDocument(data) {
+        setCurrentApplication(this);
         const document = await Document.load(this, data);
         await this.createActiveView(document);
         return document;
     }
     async createActiveView(document) {
+        setCurrentApplication(this);
         if (document === undefined) return undefined;
         const viewName = document.mode === "2d" ? "2d" : "3d";
         const view = document.visual.createView(viewName, Plane.XY);

@@ -2,8 +2,15 @@
 // See LICENSE file in the project root for full license information.
 
 export class Loading extends HTMLElement {
+    private inited = false;
+
     constructor() {
         super();
+    }
+
+    connectedCallback(): void {
+        if (this.inited) return;
+        this.inited = true;
         this.initSpinner();
         this.initLabel();
         this.initAnimation();
